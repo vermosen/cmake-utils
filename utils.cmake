@@ -18,7 +18,30 @@ function(message)
   else()
     _message(${MessageType} "${ARGV}")
   endif()
-endfunction()
+endfunction(message)
+
+function(get_current_date)
+
+    SET(options)
+	SET(oneValueArgs OUT FORMAT)
+	SET(multiValueArgs)
+
+	cmake_parse_arguments(
+		GET_DATE "${options}"
+		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+	MESSAGE(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}")
+
+	IF(UNIX)
+		EXECUTE_PROCESS(COMMAND "date" ${GET_DATE_FORMAT} OUTPUT_VARIABLE CURRENT_DATE)
+		STRING(REGEX REPLACE "\n$" "" CURRENT_DATE "${CURRENT_DATE}")
+		MESSAGE(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}, assigning value ${CURRENT_DATE}")
+		SET(${GET_DATE_OUT} ${CURRENT_DATE} PARENT_SCOPE)
+	ELSE()
+		MESSAGE(FATAL_ERROR "not implemented")
+	ENDIF()
+
+endfunction(get_current_date)
 
 macro(setup_package)
 
