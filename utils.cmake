@@ -22,6 +22,13 @@ endfunction(message)
 
 function(get_current_date)
 
+    # usage 
+    #SET(CURRENT_DATE "")
+    #get_current_date(
+    #    OUT CURRENT_DATE
+    #    FORMAT "+%Y-%m-%d"
+    #)
+
     SET(options)
 	SET(oneValueArgs OUT FORMAT)
 	SET(multiValueArgs)
