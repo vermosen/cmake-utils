@@ -80,6 +80,7 @@ macro(load_packages)
 			BASIC_SETUP KEEP_RPATHS
 			BUILD missing
 			BUILD_TYPE ${CMAKE_BUILD_TYPE}
+			PROFILE ${LOAD_PACKAGES_PROFILE}
 			UPDATE ON
 		)
 	ELSE()
@@ -91,6 +92,7 @@ macro(load_packages)
 		BASIC_SETUP KEEP_RPATHS
 		BUILD missing
 		BUILD_TYPE ${CMAKE_BUILD_TYPE}
+		PROFILE ${LOAD_PACKAGES_PROFILE}
 	)
 	ENDIF()
 
