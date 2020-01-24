@@ -18,7 +18,37 @@ function(message)
   else()
     _message(${MessageType} "${ARGV}")
   endif()
-endfunction()
+endfunction(message)
+
+function(get_current_date)
+
+    # usage 
+    #SET(CURRENT_DATE "")
+    #get_current_date(
+    #    OUT CURRENT_DATE
+    #    FORMAT "+%Y-%m-%d"
+    #)
+
+    SET(options)
+	SET(oneValueArgs OUT FORMAT)
+	SET(multiValueArgs)
+
+	cmake_parse_arguments(
+		GET_DATE "${options}"
+		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+	MESSAGE(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}")
+
+	IF(UNIX)
+		EXECUTE_PROCESS(COMMAND "date" ${GET_DATE_FORMAT} OUTPUT_VARIABLE CURRENT_DATE)
+		STRING(REGEX REPLACE "\n$" "" CURRENT_DATE "${CURRENT_DATE}")
+		MESSAGE(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}, assigning value ${CURRENT_DATE}")
+		SET(${GET_DATE_OUT} ${CURRENT_DATE} PARENT_SCOPE)
+	ELSE()
+		MESSAGE(FATAL_ERROR "not implemented")
+	ENDIF()
+
+endfunction(get_current_date)
 
 macro(setup_package)
 
@@ -134,6 +164,52 @@ function(setup_component)
 	SET(TMP "${TMP};${SETUP_COMPONENT_TARGET}")
 	MESSAGE(DEBUG "ProjectTargets values: ${TMP}")
 	SET_PROPERTY(GLOBAL PROPERTY ProjectTargets "${TMP}")
+endfunction()
+
+
+# install the library in the standard lib path
+function(install_library)
+
+    SET(options)
+	SET(oneValueArgs NAME)
+	SET(multiValueArgs)
+
+	cmake_parse_arguments(
+		INSTALL_LIBRARY "${options}"
+		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+	MESSAGE(DEBUG "set ${INSTALL_LIBRARY_NAME} install path to ${PROJECT_LIB_SUFFIX}")
+	MESSAGE(DEBUG "${INSTALL_LIBRARY_NAME} include files: ${PROJECT_INCLUDE_SUFFIX}")
+	MESSAGE(DEBUG "PROJECT_SOURCE_DIR value is ${PROJECT_SOURCE_DIR}")
+
+	# create the headers with the correct path layout
+	foreach(HEADER_FILE ${PUBLIC_HEADERS})
+		file(RELATIVE_PATH REL "${PROJECT_SOURCE_DIR}" ${HEADER_FILE})
+		string(TOLOWER ${PROJECT_NAME} PATH_PROJECT_EXT)
+
+		# ... and to the custom install location
+		SET(TARGET_INCLUDE_PATH "${PROJECT_INCLUDE_SUFFIX}/${REL}")
+		MESSAGE(DEBUG "${HEADER_FILE} target full path is ${TARGET_INCLUDE_PATH}")
+
+		# get the path component
+		get_filename_component(FILE_DIR ${TARGET_INCLUDE_PATH} DIRECTORY)
+		MESSAGE(DEBUG "header ${HEADER_FILE} will be copied in ${FILE_DIR}")
+
+		file(MAKE_DIRECTORY "${FILE_DIR}/${LIB_INSTALL_PREFIX}")
+		install(FILES ${HEADER_FILE} DESTINATION "${FILE_DIR}/${LIB_INSTALL_PREFIX}")
+	endforeach()
+
+	MESSAGE(DEBUG "exporting ${INSTALL_LIBRARY_NAME} lib into ${${TARGET_NAME}_LIBRARY_PACKAGE}}-targets...")
+
+	INSTALL(
+ 		TARGETS ${INSTALL_LIBRARY_NAME}
+		EXPORT "${${INSTALL_LIBRARY_NAME}_LIBRARY_PACKAGE}-targets"
+ 		LIBRARY DESTINATION ${PROJECT_LIB_SUFFIX}
+ 		ARCHIVE DESTINATION ${PROJECT_LIB_SUFFIX}
+		RUNTIME DESTINATION ${PROJECT_BIN_SUFFIX}
+ 		COMPONENT ${${TARGET_NAME}_LIBRARY_PACKAGE}
+ 	)
+
 endfunction()
 
 function(install_binary)
