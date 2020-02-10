@@ -18,37 +18,7 @@ function(message)
   else()
     _message(${MessageType} "${ARGV}")
   endif()
-endfunction(message)
-
-function(get_current_date)
-
-    # usage 
-    #SET(CURRENT_DATE "")
-    #get_current_date(
-    #    OUT CURRENT_DATE
-    #    FORMAT "+%Y-%m-%d"
-    #)
-
-    SET(options)
-	SET(oneValueArgs OUT FORMAT)
-	SET(multiValueArgs)
-
-	cmake_parse_arguments(
-		GET_DATE "${options}"
-		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-	MESSAGE(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}")
-
-	IF(UNIX)
-		EXECUTE_PROCESS(COMMAND "date" ${GET_DATE_FORMAT} OUTPUT_VARIABLE CURRENT_DATE)
-		STRING(REGEX REPLACE "\n$" "" CURRENT_DATE "${CURRENT_DATE}")
-		MESSAGE(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}, assigning value ${CURRENT_DATE}")
-		SET(${GET_DATE_OUT} ${CURRENT_DATE} PARENT_SCOPE)
-	ELSE()
-		MESSAGE(FATAL_ERROR "not implemented")
-	ENDIF()
-
-endfunction(get_current_date)
+endfunction()
 
 macro(setup_package)
 
@@ -110,7 +80,6 @@ macro(load_packages)
 			BASIC_SETUP KEEP_RPATHS
 			BUILD missing
 			BUILD_TYPE ${CMAKE_BUILD_TYPE}
-			PROFILE ${LOAD_PACKAGES_PROFILE}
 			UPDATE ON
 		)
 	ELSE()
@@ -122,7 +91,6 @@ macro(load_packages)
 		BASIC_SETUP KEEP_RPATHS
 		BUILD missing
 		BUILD_TYPE ${CMAKE_BUILD_TYPE}
-		PROFILE ${LOAD_PACKAGES_PROFILE}
 	)
 	ENDIF()
 
@@ -142,7 +110,7 @@ macro(load_packages)
 	endforeach(PKG)
 endmacro()
 
-function(setup_component)
+macro(setup_component)
 
     SET(options)
 	SET(oneValueArgs TARGET)
@@ -157,65 +125,55 @@ function(setup_component)
 
 	MESSAGE(DEBUG "setting target library ${SETUP_COMPONENT_TARGET}")
 
-	set(TARGET_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
+	SET(TARGET_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
 	MESSAGE(DEBUG "${SETUP_COMPONENT_TARGET} source folder set to ${TARGET_SOURCE_DIR}")
 
+	# global list of target
 	GET_PROPERTY(TMP GLOBAL PROPERTY ProjectTargets)
 	SET(TMP "${TMP};${SETUP_COMPONENT_TARGET}")
 	MESSAGE(DEBUG "ProjectTargets values: ${TMP}")
 	SET_PROPERTY(GLOBAL PROPERTY ProjectTargets "${TMP}")
-endfunction()
+endmacro()
 
-
-# install the library in the standard lib path
-function(install_library)
-
-    SET(options)
-	SET(oneValueArgs NAME)
-	SET(multiValueArgs)
-
-	cmake_parse_arguments(
-		INSTALL_LIBRARY "${options}"
-		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
-
-	MESSAGE(DEBUG "set ${INSTALL_LIBRARY_NAME} install path to ${PROJECT_LIB_SUFFIX}")
-	MESSAGE(DEBUG "${INSTALL_LIBRARY_NAME} include files: ${PROJECT_INCLUDE_SUFFIX}")
-	MESSAGE(DEBUG "PROJECT_SOURCE_DIR value is ${PROJECT_SOURCE_DIR}")
-
-	# create the headers with the correct path layout
-	foreach(HEADER_FILE ${PUBLIC_HEADERS})
-		file(RELATIVE_PATH REL "${PROJECT_SOURCE_DIR}" ${HEADER_FILE})
-		string(TOLOWER ${PROJECT_NAME} PATH_PROJECT_EXT)
-
-		# ... and to the custom install location
-		SET(TARGET_INCLUDE_PATH "${PROJECT_INCLUDE_SUFFIX}/${REL}")
-		MESSAGE(DEBUG "${HEADER_FILE} target full path is ${TARGET_INCLUDE_PATH}")
-
-		# get the path component
-		get_filename_component(FILE_DIR ${TARGET_INCLUDE_PATH} DIRECTORY)
-		MESSAGE(DEBUG "header ${HEADER_FILE} will be copied in ${FILE_DIR}")
-
-		file(MAKE_DIRECTORY "${FILE_DIR}/${LIB_INSTALL_PREFIX}")
-		install(FILES ${HEADER_FILE} DESTINATION "${FILE_DIR}/${LIB_INSTALL_PREFIX}")
-	endforeach()
-
-	MESSAGE(DEBUG "exporting ${INSTALL_LIBRARY_NAME} lib into ${${TARGET_NAME}_LIBRARY_PACKAGE}}-targets...")
-
-	INSTALL(
- 		TARGETS ${INSTALL_LIBRARY_NAME}
-		EXPORT "${${INSTALL_LIBRARY_NAME}_LIBRARY_PACKAGE}-targets"
- 		LIBRARY DESTINATION ${PROJECT_LIB_SUFFIX}
- 		ARCHIVE DESTINATION ${PROJECT_LIB_SUFFIX}
-		RUNTIME DESTINATION ${PROJECT_BIN_SUFFIX}
- 		COMPONENT ${${TARGET_NAME}_LIBRARY_PACKAGE}
- 	)
-
-endfunction()
-
-function(install_binary)
+macro(install_library)
 
 	SET(options)
 	SET(oneValueArgs NAME TARGET COMPONENT)
+	SET(multiValueArgs)
+
+	cmake_parse_arguments(
+		INSTALL_LIBRARY
+		"${options}"
+		"${oneValueArgs}"
+		"${multiValueArgs}" ${ARGN})
+
+	if (INSTALL_LIBRARY_COMPONENT)
+	else()
+		SET(INSTALL_LIBRARY_COMPONENT Unspecified)
+	endif()
+
+	# add the component to the component list
+	#GET_PROPERTY(tmp GLOBAL PROPERTY ProjectComponents)
+	#SET(tmp "${tmp};${INSTALL_BINARY_PACKAGE}")
+	#list(REMOVE_DUPLICATES tmp)
+	#MESSAGE(DEBUG "Project components is set to: ${tmp}")
+	#SET_PROPERTY(GLOBAL PROPERTY ProjectComponents "${tmp}")
+
+	MESSAGE(DEBUG "set ${INSTALL_LIBRARY_TARGET} install path to ${PROJECT_LIB_PATH}")
+	MESSAGE(DEBUG "adding target ${INSTALL_LIBRARY_TARGET} to component ${INSTALL_LIBRARY_COMPONENT}")
+
+	INSTALL(
+		TARGETS ${INSTALL_LIBRARY_TARGET}
+		RUNTIME DESTINATION ${PROJECT_BIN_PATH}
+		ARCHIVE DESTINATION ${PROJECT_LIB_PATH}
+	)
+
+endmacro()
+
+macro(install_binary)
+
+	SET(options)
+	SET(oneValueArgs NAME TARGET COMPONENT SUBFOLDER EXE)
 	SET(multiValueArgs)
 
 	cmake_parse_arguments(
@@ -237,18 +195,22 @@ function(install_binary)
 	#SET_PROPERTY(GLOBAL PROPERTY ProjectComponents "${tmp}")
 
 	MESSAGE(DEBUG "set ${INSTALL_BINARY_TARGET} install path to ${CMAKE_INSTALL_PREFIX}/bin")
-	MESSAGE(DEBUG "adding target ${TARGET_NAME} to package ${INSTALL_BINARY_PACKAGE}")
-	MESSAGE(DEBUG "${TARGET_NAME} binary name set to ${BINARY_NAME}")
+	MESSAGE(DEBUG "adding target ${INSTALL_BINARY_TARGET} to component ${INSTALL_BINARY_COMPONENT}")
 
-	set_target_properties(${TARGET_NAME} PROPERTIES OUTPUT_NAME "${BINARY_NAME}")
+	if (NOT DEFINED INSTALL_BINARY_EXE)
+		SET(INSTALL_BINARY_EXE ${INSTALL_BINARY_TARGET})
+	endif()
+	
+	set_target_properties(${INSTALL_BINARY_TARGET} PROPERTIES OUTPUT_NAME ${INSTALL_BINARY_EXE})
+
+	MESSAGE(DEBUG "${INSTALL_BINARY_TARGET} binary name set to ${INSTALL_BINARY_EXE}")
 
 	INSTALL(
-		TARGETS ${TARGET_NAME}
-		RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}/bin/${TARGET_INSTALL_SUBFOLDER}"
-		COMPONENT ${INSTALL_BINARY_COMPONENT}
+		TARGETS ${INSTALL_BINARY_TARGET}
+		RUNTIME DESTINATION ${PROJECT_BIN_PATH}/${INSTALL_BINARY_SUBFOLDER}
 	)
 
-endfunction()
+endmacro()
 
 macro(enable_testing)
 
@@ -260,5 +222,27 @@ macro(enable_testing)
 
 	MESSAGE(DEBUG "enabling testing ...")
 	_enable_testing()
+
+endmacro()
+
+macro(gtest_add_test)
+	
+	SET(options)
+	SET(oneValueArgs TARGET SUBFOLDER)
+	SET(multiValueArgs)
+
+	cmake_parse_arguments(
+		GTEST_ADD_TEST
+		"${options}"
+		"${oneValueArgs}"
+		"${multiValueArgs}" ${ARGN})
+
+	MESSAGE(DEBUG "test TARGET set to ${GTEST_ADD_TEST_TARGET}")
+
+	gtest_add_tests(
+		TARGET ${GTEST_ADD_TEST_TARGET}
+	)
+
+	install_binary(TARGET ${GTEST_ADD_TEST_TARGET} SUBFOLDER ${GTEST_ADD_TEST_SUBFOLDER})
 
 endmacro()
