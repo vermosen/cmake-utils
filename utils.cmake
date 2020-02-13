@@ -260,3 +260,49 @@ macro(enable_testing)
 	_enable_testing()
 
 endmacro()
+
+function(import_python)
+
+	SET(options)
+	SET(oneValueArgs HINT)
+	SET(multiValueArgs)
+
+	cmake_parse_arguments(
+		IMPORT_PYTHON
+		"${options}"
+		"${oneValueArgs}"
+		"${multiValueArgs}" ${ARGN})
+
+	SET(Python3_ROOT_DIR ${IMPORT_PYTHON_HINT})
+
+	MESSAGE(DEBUG "Python3_ROOT_DIR set to value: ${Python3_ROOT_DIR}")
+
+	# include python libs
+	find_package(
+		Python3 REQUIRED
+		COMPONENTS Interpreter Development
+	)
+
+	# set the python paths to python3
+	MESSAGE(DEBUG "Python3_PYTHONLIBS_FOUND set to value: ${Python3_PYTHONLIBS_FOUND}"		)
+	MESSAGE(DEBUG "Python3_EXECUTABLE set to value: ${Python3_EXECUTABLE}"					)
+	MESSAGE(DEBUG "Python3_LIBRARY_DIRS set to value: ${Python3_LIBRARY_DIRS}"				)
+	MESSAGE(DEBUG "Python3_INCLUDE_DIRS set to value: ${Python3_INCLUDE_DIRS}"				)
+	MESSAGE(DEBUG "PYTHONLIBS_VERSION_STRING set to value: ${PYTHONLIBS_VERSION_STRING}"	)
+
+	SET(PYTHONLIBS_FOUND			${Python3_PYTHONLIBS_FOUND} PARENT_SCOPE)
+	SET(PYTHON_EXECUTABLE			${Python3_EXECUTABLE}		PARENT_SCOPE)
+	SET(PYTHON_LIBRARIES_DIRS		${Python3_LIBRARY_DIRS}		PARENT_SCOPE)
+	SET(PYTHON_INCLUDE_PATH			${Python3_INCLUDE_DIRS}		PARENT_SCOPE)
+	SET(PYTHONLIBS_VERSION_STRING	${Python3_VERSION}			PARENT_SCOPE)
+
+	MESSAGE(MESSAGE "PYTHON_EXECUTABLE set to location: ${PYTHON_EXECUTABLE}"				)
+
+	MESSAGE(DEBUG "PYTHONLIBS_FOUND set to value: ${PYTHONLIBS_FOUND}"						)
+	MESSAGE(DEBUG "PYTHON_LIBRARIES_DIRS set to location: ${PYTHON_LIBRARIES_DIRS}"			)
+	MESSAGE(DEBUG "PYTHON_INCLUDE_PATH set to location: ${PYTHON_INCLUDE_PATH}"				)
+	MESSAGE(DEBUG "PYTHONLIBS_VERSION_STRING set to location: ${PYTHONLIBS_VERSION_STRING}"	)
+
+	include_directories(${PYTHON_INCLUDE_PATH})
+
+endfunction()
