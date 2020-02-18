@@ -248,6 +248,28 @@ function(install_binary)
 
 endfunction()
 
+function(gtest_add_test)
+
+  SET(options)
+  SET(oneValueArgs TARGET SUBFOLDER)
+  SET(multiValueArgs)
+
+  cmake_parse_arguments(
+    GTEST_ADD_TEST
+    "${options}"
+    "${oneValueArgs}"
+    "${multiValueArgs}" ${ARGN})
+
+  MESSAGE(DEBUG "test TARGET set to ${GTEST_ADD_TEST_TARGET}")
+
+  gtest_add_tests(
+    TARGET ${GTEST_ADD_TEST_TARGET}
+  )
+
+  install_binary(TARGET ${GTEST_ADD_TEST_TARGET} SUBFOLDER ${GTEST_ADD_TEST_SUBFOLDER})
+
+endfunction()
+
 macro(enable_testing)
 
 	MESSAGE(DEBUG "CONAN_GTEST_ROOT value set to ${CONAN_GTEST_ROOT}")
