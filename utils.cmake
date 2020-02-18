@@ -85,10 +85,10 @@ macro(setup_package)
 
 endmacro()
 
-macro(load_packages)
+function(load_packages)
 
     SET(options UPDATE)
-	SET(oneValueArgs OPTIONS SETTINGS PROFILE)
+	SET(oneValueArgs PROFILE OPTIONS SETTINGS)
 	SET(multiValueArgs NAME)
 
 	cmake_parse_arguments(
@@ -99,13 +99,13 @@ macro(load_packages)
 		setup_package(NAME ${PKG})
 	endforeach(PKG)
 
-	MESSAGE(STATUS "packages to be loaded: ${REPOS} with configuration ${CMAKE_BUILD_TYPE}, settings ${LOAD_PACKAGES_SETTINGS} and options ${LOAD_PACKAGES_OPTIONS}")
+	MESSAGE(STATUS "packages to be loaded: ${REPOS} with configuration ${CMAKE_BUILD_TYPE}, settings ${LOAD_PACKAGES_SETTINGS} and options string ${LOAD_PACKAGES_OPTIONS}")
 
 	IF (${LOAD_PACKAGES_UPDATE})
 		conan_cmake_run(
 			REQUIRES ${REPOS}
-			SETTINGS ${LOAD_PACKAGES_SETTINGS}
 			OPTIONS ${LOAD_PACKAGES_OPTIONS}
+			SETTINGS ${LOAD_PACKAGES_SETTINGS}
 			BASIC_SETUP CMAKE_TARGETS
 			BASIC_SETUP KEEP_RPATHS
 			BUILD missing
@@ -115,8 +115,8 @@ macro(load_packages)
 	ELSE()
 	conan_cmake_run(
 		REQUIRES ${REPOS}
-		SETTINGS ${CONAN_EXTRA_SETTINGS}
-		OPTIONS ${CONAN_EXTRA_OPTIONS}
+		OPTIONS ${LOAD_PACKAGES_OPTIONS}
+		SETTINGS ${LOAD_PACKAGES_SETTINGS}
 		BASIC_SETUP CMAKE_TARGETS
 		BASIC_SETUP KEEP_RPATHS
 		BUILD missing
@@ -138,7 +138,7 @@ macro(load_packages)
 			endif()
 		endif()
 	endforeach(PKG)
-endmacro()
+endfunction()
 
 function(setup_component)
 
