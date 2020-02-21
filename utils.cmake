@@ -85,7 +85,8 @@ macro(setup_package)
 
 endmacro()
 
-function(load_packages)
+# warning: keep as a macro !
+macro(load_packages)
 
     SET(options UPDATE)
 	SET(oneValueArgs PROFILE OPTIONS SETTINGS)
@@ -138,7 +139,7 @@ function(load_packages)
 			endif()
 		endif()
 	endforeach(PKG)
-endfunction()
+endmacro()
 
 function(setup_component)
 
@@ -282,6 +283,29 @@ macro(enable_testing)
 	_enable_testing()
 
 endmacro()
+
+
+function(add_testsuite)
+
+	SET(options)
+	SET(oneValueArgs DIRECTORY)
+	SET(multiValueArgs)
+
+	cmake_parse_arguments(
+		ADD_TESTSUITE
+		"${options}"
+		"${oneValueArgs}"
+		"${multiValueArgs}" ${ARGN})
+
+	MESSAGE(DEBUG "enable testing...")
+
+	enable_testing()
+
+	# the CTest file cannot be imported before 
+	# the project get defined... So we import it here !
+	add_subdirectory(${ADD_TESTSUITE_DIRECTORY})
+
+endfunction()
 
 function(import_python)
 
