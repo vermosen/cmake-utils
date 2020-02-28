@@ -100,27 +100,26 @@ function(load_debug_info)
 	foreach(PKG ${LOAD_DEBUG_INFO_NAME})
 
 		string(TOUPPER ${PKG} PKG_NAME)
-		set(PKG_PATH "CONAN_USER_${PKG_NAME}_GDB_PRINTER")
+		set(PKG_PATH    "CONAN_USER_${PKG_NAME}_GDB_PRINTER_FOLDER" )
+		set(PKG_FILE    "CONAN_USER_${PKG_NAME}_GDB_PRINTER_FILE"   )
+		set(PKG_CLASSES "CONAN_USER_${PKG_NAME}_GDB_IMPORT_CLASSES" )
+		set(PKG_PRINTER "CONAN_USER_${PKG_NAME}_GDB_PRINTER_CLASS"  )
 
-		message(DEBUG "gdb variable set to ${PKG_PATH} with value ${${PKG_PATH}}")
-		message(DEBUG "root folder set to CONAN_${PKG_NAME}_ROOT with value ${CONAN_${PKG_NAME}_ROOT}")
+		SET(DEBUG_PATH ${CONAN_${PKG_NAME}_ROOT}/${${PKG_PATH}})
 
-		if(DEFINED ${PKG_PATH})
-			set(GDB_PATH "${CONAN_${PKG_NAME}_ROOT}/${${PKG_PATH}}")
-
-			message(DEBUG "pretty printer path set to ${GDB_PATH}")
-
-			if(EXISTS ${GDB_PATH})
-				SET(${PKG_NAME}_PRETTY_PRINTER ${GDB_PATH} PARENT_SCOPE)
-			else()
-				message(WARNING "cannot find defined path ${GDB_PATH}")
-			endif()
+		if(DEFINED ${PKG_PATH} AND EXISTS ${DEBUG_PATH})
+			message(DEBUG "found debug information in ${DEBUG_PATH} for package ${PKG}")
+			set(${PKG_NAME}_GDB_FOLDER        ${DEBUG_PATH}		PARENT_SCOPE)
+			set(${PKG_NAME}_GDB_FILE          ${${PKG_FILE}}    PARENT_SCOPE)
+			set(${PKG_NAME}_GDB_CLASSES       ${${PKG_CLASSES}} PARENT_SCOPE)
+			set(${PKG_NAME}_GDB_PRINTER_CLASS ${${PKG_PRINTER}}	PARENT_SCOPE)
 		endif()
 	endforeach()
 endfunction()
 
-function(load_packages)
+macro(load_packages)
 
+	# important: keep as a macro to fwd to calling scope
     SET(options UPDATE)
 	SET(oneValueArgs PROFILE OPTIONS SETTINGS)
 	SET(multiValueArgs NAME)
@@ -172,7 +171,7 @@ function(load_packages)
 			endif()
 		endif()
 	endforeach(PKG)
-endfunction()
+endmacro()
 
 function(setup_component)
 
@@ -316,6 +315,53 @@ macro(enable_testing)
 	_enable_testing()
 
 endmacro()
+
+function(create_debug_conf)
+
+	set(options)
+	set(oneValueArgs)
+	set(multiValueArgs NAME)
+
+	cmake_parse_arguments(
+		CREATE_DEBUG_CONF "${options}"
+		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+	load_debug_info(
+		NAME ${CREATE_DEBUG_CONF_NAME}
+	)
+
+	foreach(PKG ${CREATE_DEBUG_CONF_NAME})
+
+		string(TOUPPER ${PKG} PKG_NAME)
+		# if(linux)
+		# create the .gdbinit file in local cache
+
+		if (DEFINED ${PKG_NAME}_GDB_FOLDER)
+			list(APPEND SYSPATHS "sys.path.insert(0, '${${PKG_NAME}_GDB_FOLDER}')\n")
+		endif()
+
+		if (DEFINED ${PKG_NAME}_GDB_FILE AND DEFINED ${PKG_NAME}_GDB_CLASSES)
+
+		    string(REGEX REPLACE ".py" "" FOO ${${PKG_NAME}_GDB_FILE})
+		    set(TMP "from ${FOO} import ${${PKG_NAME}_GDB_CLASSES}\n")
+			list(APPEND IMPORTSTR ${TMP})
+		endif()
+
+		if (DEFINED ${PKG_NAME}_GDB_PRINTER_CLASS)
+			list(APPEND REGISTERSTR "${${PKG_NAME}_GDB_PRINTER_CLASS}(None)\n")
+		endif()
+
+	endforeach()
+
+	message(DEBUG "SYSPATHS string set to ${SYSPATHS}"		)
+	message(DEBUG "IMPORTSTR string set to ${IMPORTSTR}"	)
+	message(DEBUG "REGISTERSTR string set to ${REGISTERSTR}")
+
+	# writing the .gdinit file
+	file(WRITE "${PROJECT_BINARY_DIR}/.gdbinit"
+	"python\nimport sys\n\n${SYSPATHS}\n${IMPORTSTR}\n${REGISTERSTR}\nend\n\nset print pretty on\nset print static-members on\n")
+
+endfunction()
 
 function(import_python)
 
