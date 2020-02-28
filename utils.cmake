@@ -85,6 +85,40 @@ macro(setup_package)
 
 endmacro()
 
+function(load_debug_info)
+
+	set(options)
+	set(oneValueArgs)
+	set(multiValueArgs NAME)
+
+	cmake_parse_arguments(
+		LOAD_DEBUG_INFO "${options}"
+		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+	message(DEBUG "load_debug_info function invoked with NAME ${LOAD_DEBUG_INFO_NAME}")
+
+	foreach(PKG ${LOAD_DEBUG_INFO_NAME})
+
+		string(TOUPPER ${PKG} PKG_NAME)
+		set(PKG_PATH "CONAN_USER_${PKG_NAME}_GDB_PRINTER")
+
+		message(DEBUG "gdb variable set to ${PKG_PATH} with value ${${PKG_PATH}}")
+		message(DEBUG "root folder set to CONAN_${PKG_NAME}_ROOT with value ${CONAN_${PKG_NAME}_ROOT}")
+
+		if(DEFINED ${PKG_PATH})
+			set(GDB_PATH "${CONAN_${PKG_NAME}_ROOT}/${${PKG_PATH}}")
+
+			message(DEBUG "pretty printer path set to ${GDB_PATH}")
+
+			if(EXISTS ${GDB_PATH})
+				SET(${PKG_NAME}_PRETTY_PRINTER ${GDB_PATH} PARENT_SCOPE)
+			else()
+				message(WARNING "cannot find defined path ${GDB_PATH}")
+			endif()
+		endif()
+	endforeach()
+endfunction()
+
 function(load_packages)
 
     SET(options UPDATE)
