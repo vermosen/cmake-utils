@@ -23,38 +23,38 @@ endfunction(message)
 function(get_current_date)
 
     # usage 
-    #SET(CURRENT_DATE "")
+    #set(CURRENT_DATE "")
     #get_current_date(
     #    OUT CURRENT_DATE
     #    FORMAT "+%Y-%m-%d"
     #)
 
-    SET(options)
-	SET(oneValueArgs OUT FORMAT)
-	SET(multiValueArgs)
+    set(options)
+	set(oneValueArgs OUT FORMAT)
+	set(multiValueArgs)
 
 	cmake_parse_arguments(
 		GET_DATE "${options}"
 		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-	MESSAGE(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}")
+	message(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}")
 
 	IF(UNIX)
 		EXECUTE_PROCESS(COMMAND "date" ${GET_DATE_FORMAT} OUTPUT_VARIABLE CURRENT_DATE)
 		STRING(REGEX REPLACE "\n$" "" CURRENT_DATE "${CURRENT_DATE}")
-		MESSAGE(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}, assigning value ${CURRENT_DATE}")
-		SET(${GET_DATE_OUT} ${CURRENT_DATE} PARENT_SCOPE)
+		message(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}, assigning value ${CURRENT_DATE}")
+		set(${GET_DATE_OUT} ${CURRENT_DATE} PARENT_SCOPE)
 	ELSE()
-		MESSAGE(FATAL_ERROR "not implemented")
+		message(FATAL_ERROR "not implemented")
 	ENDIF()
 
 endfunction(get_current_date)
 
 macro(setup_package)
 
-    SET(options)
-	SET(oneValueArgs NAME)
-	SET(multiValueArgs)
+    set(options)
+	set(oneValueArgs NAME)
+	set(multiValueArgs)
 
 	cmake_parse_arguments(
 		SETUP_PACKAGE 
@@ -65,20 +65,20 @@ macro(setup_package)
 
 	STRING(TOUPPER ${SETUP_PACKAGE_NAME} UCASE)
 
-	MESSAGE(DEBUG "${SETUP_PACKAGE_NAME} package setup ...")
+	message(DEBUG "${SETUP_PACKAGE_NAME} package setup ...")
 
 	# allows override of the user used
 	IF(DEFINED ${UCASE}_CONAN_USER)
-		MESSAGE(STATUS "${libname} user has been overriden to ${${UCASE}_CONAN_USER}")
+		message(STATUS "${libname} user has been overriden to ${${UCASE}_CONAN_USER}")
 	else()
-		SET(${UCASE}_CONAN_USER ${CONAN_USER})
+		set(${UCASE}_CONAN_USER ${CONAN_USER})
 	endif()
 
 	# allows override of the channel used
 	IF(DEFINED ${UCASE}_CONAN_CHANNEL)
-		MESSAGE(STATUS "${libname} channel has been overriden to ${${UCASE}_CONAN_CHANNEL}")
+		message(STATUS "${libname} channel has been overriden to ${${UCASE}_CONAN_CHANNEL}")
 	else()
-		SET(${UCASE}_CONAN_CHANNEL ${CONAN_CHANNEL})
+		set(${UCASE}_CONAN_CHANNEL ${CONAN_CHANNEL})
 	endif()
 
 	list(APPEND REPOS "${SETUP_PACKAGE_NAME}/${${UCASE}_VERS}@${${UCASE}_CONAN_USER}/${${UCASE}_CONAN_CHANNEL}")
@@ -105,7 +105,7 @@ function(load_debug_info)
 		set(PKG_CLASSES "CONAN_USER_${PKG_NAME}_GDB_IMPORT_CLASSES" )
 		set(PKG_PRINTER "CONAN_USER_${PKG_NAME}_GDB_PRINTER_CLASS"  )
 
-		SET(DEBUG_PATH ${CONAN_${PKG_NAME}_ROOT}/${${PKG_PATH}})
+		set(DEBUG_PATH ${CONAN_${PKG_NAME}_ROOT}/${${PKG_PATH}})
 
 		if(DEFINED ${PKG_PATH} AND EXISTS ${DEBUG_PATH})
 			message(DEBUG "found debug information in ${DEBUG_PATH} for package ${PKG}")
@@ -120,9 +120,9 @@ endfunction()
 macro(load_packages)
 
 	# important: keep as a macro to fwd to calling scope
-    SET(options UPDATE)
-	SET(oneValueArgs PROFILE OPTIONS SETTINGS)
-	SET(multiValueArgs NAME)
+    set(options UPDATE)
+	set(oneValueArgs PROFILE OPTIONS SETTINGS)
+	set(multiValueArgs NAME)
 
 	cmake_parse_arguments(
 		LOAD_PACKAGES "${options}"
@@ -132,7 +132,7 @@ macro(load_packages)
 		setup_package(NAME ${PKG})
 	endforeach(PKG)
 
-	MESSAGE(STATUS "packages to be loaded: ${REPOS} with configuration ${CMAKE_BUILD_TYPE}, settings ${LOAD_PACKAGES_SETTINGS} and options string ${LOAD_PACKAGES_OPTIONS}")
+	message(STATUS "packages to be loaded: ${REPOS} with configuration ${CMAKE_BUILD_TYPE}, settings ${LOAD_PACKAGES_SETTINGS} and options string ${LOAD_PACKAGES_OPTIONS}")
 
 	IF (${LOAD_PACKAGES_UPDATE})
 		conan_cmake_run(
@@ -162,12 +162,12 @@ macro(load_packages)
 	foreach(PKG ${REPO})
 		string(TOUPPER ${PKG} UCASE)
 		if(${UCASE}_CMAKE_CONFIG)
-			MESSAGE(DEBUG "${UCASE}_CMAKE_CONFIG has been defined. Looking for ${PKG}Config.cmake...")
+			message(DEBUG "${UCASE}_CMAKE_CONFIG has been defined. Looking for ${PKG}Config.cmake...")
 			find_package(${PKG} REQUIRED HINTS CONAN_${PKG}_ROOT)
 			if (${${PKG}_FOUND})
-				MESSAGE(STATUS "${PKG} package ... Found")
+				message(STATUS "${PKG} package ... Found")
 			else()
-				MESSAGE(FATAL_ERROR "${PKG} package ... Not Found !")
+				message(FATAL_ERROR "${PKG} package ... Not Found !")
 			endif()
 		endif()
 	endforeach(PKG)
@@ -175,9 +175,9 @@ endmacro()
 
 function(setup_component)
 
-    SET(options)
-	SET(oneValueArgs TARGET)
-	SET(multiValueArgs)
+    set(options)
+	set(oneValueArgs TARGET)
+	set(multiValueArgs)
 
 	cmake_parse_arguments(
 		SETUP_COMPONENT 
@@ -186,55 +186,52 @@ function(setup_component)
 		"${multiValueArgs}" ${ARGN}
 	)
 
-	MESSAGE(DEBUG "setting target library ${SETUP_COMPONENT_TARGET}")
-
-	set(TARGET_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} PARENT_SCOPE)
-	MESSAGE(DEBUG "${SETUP_COMPONENT_TARGET} source folder set to ${TARGET_SOURCE_DIR}")
-
-	GET_PROPERTY(TMP GLOBAL PROPERTY ProjectTargets)
-	SET(TMP "${TMP};${SETUP_COMPONENT_TARGET}")
-	MESSAGE(DEBUG "ProjectTargets values: ${TMP}")
-	SET_PROPERTY(GLOBAL PROPERTY ProjectTargets "${TMP}")
 endfunction()
 
 
 # install the library in the standard lib path
 function(install_library)
 
-    SET(options)
-	SET(oneValueArgs NAME)
-	SET(multiValueArgs)
+    set(options)
+	set(oneValueArgs NAME PACKAGE)
+	set(multiValueArgs HEADERS)
 
 	cmake_parse_arguments(
 		INSTALL_LIBRARY "${options}"
 		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
-	MESSAGE(DEBUG "set ${INSTALL_LIBRARY_NAME} install path to ${PROJECT_LIB_SUFFIX}")
-	MESSAGE(DEBUG "${INSTALL_LIBRARY_NAME} include files: ${PROJECT_INCLUDE_SUFFIX}")
-	MESSAGE(DEBUG "PROJECT_SOURCE_DIR value is ${PROJECT_SOURCE_DIR}")
+	if (DEFINED INSTALL_LIBRARY_PACKAGE)
+	else()
+		set(INSTALL_LIBRARY_PACKAGE ${INSTALL_LIBRARY_NAME})
+	endif()
+
+	message(DEBUG "set ${INSTALL_LIBRARY_NAME} install path to ${PROJECT_LIB_SUFFIX}")
+	message(DEBUG "${INSTALL_LIBRARY_NAME} include files: ${PROJECT_INCLUDE_SUFFIX}")
+	message(DEBUG "PROJECT_SOURCE_DIR set to: ${PROJECT_SOURCE_DIR}/${PROJECT_SRC_SUFFIX}")
+	message(DEBUG "INSTALL_LIBRARY_PACKAGE set to: ${INSTALL_LIBRARY_PACKAGE}")
 
 	# create the headers with the correct path layout
-	foreach(HEADER_FILE ${PUBLIC_HEADERS})
-		file(RELATIVE_PATH REL "${PROJECT_SOURCE_DIR}" ${HEADER_FILE})
+	foreach(HEADER_FILE ${INSTALL_LIBRARY_HEADERS})
+		file(RELATIVE_PATH REL "${PROJECT_SOURCE_DIR}/${PROJECT_SRC_SUFFIX}" ${HEADER_FILE})
 		string(TOLOWER ${PROJECT_NAME} PATH_PROJECT_EXT)
 
 		# ... and to the custom install location
-		SET(TARGET_INCLUDE_PATH "${PROJECT_INCLUDE_SUFFIX}/${REL}")
-		MESSAGE(DEBUG "${HEADER_FILE} target full path is ${TARGET_INCLUDE_PATH}")
+		set(TARGET_INCLUDE_PATH "${PROJECT_INCLUDE_SUFFIX}/${REL}")
+		message(DEBUG "header ${HEADER_FILE} path set to ${TARGET_INCLUDE_PATH}")
 
 		# get the path component
 		get_filename_component(FILE_DIR ${TARGET_INCLUDE_PATH} DIRECTORY)
-		MESSAGE(DEBUG "header ${HEADER_FILE} will be copied in ${FILE_DIR}")
+		message(DEBUG "header ${HEADER_FILE} will be copied in ${FILE_DIR}")
 
 		file(MAKE_DIRECTORY "${FILE_DIR}/${LIB_INSTALL_PREFIX}")
 		install(FILES ${HEADER_FILE} DESTINATION "${FILE_DIR}/${LIB_INSTALL_PREFIX}")
 	endforeach()
 
-	MESSAGE(DEBUG "exporting ${INSTALL_LIBRARY_NAME} lib into ${${TARGET_NAME}_LIBRARY_PACKAGE}}-targets...")
+	message(DEBUG "exporting ${INSTALL_LIBRARY_NAME} lib into ${INSTALL_LIBRARY_PACKAGE}-targets...")
 
 	INSTALL(
  		TARGETS ${INSTALL_LIBRARY_NAME}
-		EXPORT "${${INSTALL_LIBRARY_NAME}_LIBRARY_PACKAGE}-targets"
+		EXPORT "${INSTALL_LIBRARY_PACKAGE}-targets"
  		LIBRARY DESTINATION ${INSTALL_LIB_DIR}
  		ARCHIVE DESTINATION ${INSTALL_LIB_DIR}
 		RUNTIME DESTINATION ${INSTALL_BIN_DIR}
@@ -245,9 +242,9 @@ endfunction()
 
 function(install_binary)
 
-	SET(options)
-	SET(oneValueArgs BINARY TARGET COMPONENT SUBFOLDER)
-	SET(multiValueArgs)
+	set(options)
+	set(oneValueArgs BINARY TARGET COMPONENT SUBFOLDER)
+	set(multiValueArgs)
 
 	cmake_parse_arguments(
 		INSTALL_BINARY
@@ -257,19 +254,19 @@ function(install_binary)
 
 	if (INSTALL_BINARY_COMPONENT)
 	else()
-		SET(INSTALL_BINARY_COMPONENT Unspecified)
+		set(INSTALL_BINARY_COMPONENT Unspecified)
 	endif()
 
 	# add the component to the component list
 	#GET_PROPERTY(tmp GLOBAL PROPERTY ProjectComponents)
-	#SET(tmp "${tmp};${INSTALL_BINARY_PACKAGE}")
+	#set(tmp "${tmp};${INSTALL_BINARY_PACKAGE}")
 	#list(REMOVE_DUPLICATES tmp)
-	#MESSAGE(DEBUG "Project components is set to: ${tmp}")
+	#message(DEBUG "Project components is set to: ${tmp}")
 	#SET_PROPERTY(GLOBAL PROPERTY ProjectComponents "${tmp}")
 
-	MESSAGE(DEBUG "set ${INSTALL_BINARY_TARGET} install path to ${CMAKE_INSTALL_PREFIX}/bin")
-	MESSAGE(DEBUG "adding target ${INSTALL_BINARY_TARGET} to component ${INSTALL_BINARY_COMPONENT}")
-	MESSAGE(DEBUG "INSTALL_BINARY_TARGET binary name set to ${INSTALL_BINARY_BINARY}")
+	message(DEBUG "set ${INSTALL_BINARY_TARGET} install path to ${CMAKE_INSTALL_PREFIX}/bin")
+	message(DEBUG "adding target ${INSTALL_BINARY_TARGET} to component ${INSTALL_BINARY_COMPONENT}")
+	message(DEBUG "INSTALL_BINARY_TARGET binary name set to ${INSTALL_BINARY_BINARY}")
 
 	set_target_properties(${INSTALL_BINARY_TARGET} PROPERTIES OUTPUT_NAME "${INSTALL_BINARY_BINARY}")
 
@@ -283,9 +280,9 @@ endfunction()
 
 function(add_gtest)
 
-  SET(options)
-  SET(oneValueArgs BINARY TARGET SUBFOLDER)
-  SET(multiValueArgs)
+  set(options)
+  set(oneValueArgs BINARY TARGET SUBFOLDER)
+  set(multiValueArgs)
 
   cmake_parse_arguments(
     ADD_GTEST
@@ -293,8 +290,8 @@ function(add_gtest)
     "${oneValueArgs}"
     "${multiValueArgs}" ${ARGN})
 
-  MESSAGE(DEBUG "ADD_GTEST_TARGET set to ${ADD_GTEST_TARGET}")
-  MESSAGE(DEBUG "ADD_GTEST_BINARY set to ${ADD_GTEST_BINARY}")
+  message(DEBUG "ADD_GTEST_TARGET set to ${ADD_GTEST_TARGET}")
+  message(DEBUG "ADD_GTEST_BINARY set to ${ADD_GTEST_BINARY}")
 
   gtest_add_tests(
     TARGET ${ADD_GTEST_TARGET}
@@ -306,13 +303,13 @@ endfunction()
 
 macro(enable_testing)
 
-	MESSAGE(DEBUG "CONAN_GTEST_ROOT value set to ${CONAN_GTEST_ROOT}")
+	message(DEBUG "CONAN_GTEST_ROOT value set to ${CONAN_GTEST_ROOT}")
 	if (DEFINED CONAN_GTEST_ROOT)
 		include(GoogleTest)
 	else()
 	endif()
 
-	MESSAGE(DEBUG "enabling testing ...")
+	message(DEBUG "enabling testing ...")
 	_enable_testing()
 
 endmacro()
@@ -320,9 +317,9 @@ endmacro()
 
 macro(add_testsuite)
 
-	SET(options)
-	SET(oneValueArgs DIRECTORY)
-	SET(multiValueArgs)
+	set(options)
+	set(oneValueArgs DIRECTORY)
+	set(multiValueArgs)
 
 	cmake_parse_arguments(
 		ADD_TESTSUITE
@@ -330,7 +327,7 @@ macro(add_testsuite)
 		"${oneValueArgs}"
 		"${multiValueArgs}" ${ARGN})
 
-	MESSAGE(DEBUG "enable testing...")
+	message(DEBUG "enable testing...")
 
 	enable_testing()
 
@@ -389,9 +386,9 @@ endfunction()
 
 function(import_python)
 
-	SET(options)
-	SET(oneValueArgs HINT)
-	SET(multiValueArgs)
+	set(options)
+	set(oneValueArgs HINT)
+	set(multiValueArgs)
 
 	cmake_parse_arguments(
 		IMPORT_PYTHON
@@ -399,9 +396,9 @@ function(import_python)
 		"${oneValueArgs}"
 		"${multiValueArgs}" ${ARGN})
 
-	SET(Python3_ROOT_DIR ${IMPORT_PYTHON_HINT})
+	set(Python3_ROOT_DIR ${IMPORT_PYTHON_HINT})
 
-	MESSAGE(DEBUG "Python3_ROOT_DIR set to value: ${Python3_ROOT_DIR}")
+	message(DEBUG "Python3_ROOT_DIR set to value: ${Python3_ROOT_DIR}")
 
 	# include python libs
 	find_package(
@@ -410,25 +407,92 @@ function(import_python)
 	)
 
 	# set the python paths to python3
-	MESSAGE(DEBUG "Python3_PYTHONLIBS_FOUND set to value: ${Python3_PYTHONLIBS_FOUND}"		)
-	MESSAGE(DEBUG "Python3_EXECUTABLE set to value: ${Python3_EXECUTABLE}"					)
-	MESSAGE(DEBUG "Python3_LIBRARY_DIRS set to value: ${Python3_LIBRARY_DIRS}"				)
-	MESSAGE(DEBUG "Python3_INCLUDE_DIRS set to value: ${Python3_INCLUDE_DIRS}"				)
-	MESSAGE(DEBUG "PYTHONLIBS_VERSION_STRING set to value: ${PYTHONLIBS_VERSION_STRING}"	)
+	message(DEBUG "Python3_PYTHONLIBS_FOUND set to value: ${Python3_PYTHONLIBS_FOUND}"		)
+	message(DEBUG "Python3_EXECUTABLE set to value: ${Python3_EXECUTABLE}"					)
+	message(DEBUG "Python3_LIBRARY_DIRS set to value: ${Python3_LIBRARY_DIRS}"				)
+	message(DEBUG "Python3_INCLUDE_DIRS set to value: ${Python3_INCLUDE_DIRS}"				)
+	message(DEBUG "PYTHONLIBS_VERSION_STRING set to value: ${PYTHONLIBS_VERSION_STRING}"	)
 
-	SET(PYTHONLIBS_FOUND			${Python3_PYTHONLIBS_FOUND} PARENT_SCOPE)
-	SET(PYTHON_EXECUTABLE			${Python3_EXECUTABLE}		PARENT_SCOPE)
-	SET(PYTHON_LIBRARIES_DIRS		${Python3_LIBRARY_DIRS}		PARENT_SCOPE)
-	SET(PYTHON_INCLUDE_PATH			${Python3_INCLUDE_DIRS}		PARENT_SCOPE)
-	SET(PYTHONLIBS_VERSION_STRING	${Python3_VERSION}			PARENT_SCOPE)
+	set(PYTHONLIBS_FOUND			${Python3_PYTHONLIBS_FOUND} PARENT_SCOPE)
+	set(PYTHON_EXECUTABLE			${Python3_EXECUTABLE}		PARENT_SCOPE)
+	set(PYTHON_LIBRARIES_DIRS		${Python3_LIBRARY_DIRS}		PARENT_SCOPE)
+	set(PYTHON_INCLUDE_PATH			${Python3_INCLUDE_DIRS}		PARENT_SCOPE)
+	set(PYTHONLIBS_VERSION_STRING	${Python3_VERSION}			PARENT_SCOPE)
 
-	MESSAGE(MESSAGE "PYTHON_EXECUTABLE set to location: ${PYTHON_EXECUTABLE}"				)
+	message(message "PYTHON_EXECUTABLE set to location: ${PYTHON_EXECUTABLE}"				)
 
-	MESSAGE(DEBUG "PYTHONLIBS_FOUND set to value: ${PYTHONLIBS_FOUND}"						)
-	MESSAGE(DEBUG "PYTHON_LIBRARIES_DIRS set to location: ${PYTHON_LIBRARIES_DIRS}"			)
-	MESSAGE(DEBUG "PYTHON_INCLUDE_PATH set to location: ${PYTHON_INCLUDE_PATH}"				)
-	MESSAGE(DEBUG "PYTHONLIBS_VERSION_STRING set to location: ${PYTHONLIBS_VERSION_STRING}"	)
+	message(DEBUG "PYTHONLIBS_FOUND set to value: ${PYTHONLIBS_FOUND}"						)
+	message(DEBUG "PYTHON_LIBRARIES_DIRS set to location: ${PYTHON_LIBRARIES_DIRS}"			)
+	message(DEBUG "PYTHON_INCLUDE_PATH set to location: ${PYTHON_INCLUDE_PATH}"				)
+	message(DEBUG "PYTHONLIBS_VERSION_STRING set to location: ${PYTHONLIBS_VERSION_STRING}"	)
 
 	include_directories(${PYTHON_INCLUDE_PATH})
+
+endfunction()
+
+function(package_project)
+
+	set(options)
+	set(oneValueArgs NAME NAMESPACE SOURCE)
+	set(multiValueArgs)
+
+	cmake_parse_arguments(
+		PACKAGE_PROJECT
+		"${options}"
+		"${oneValueArgs}"
+		"${multiValueArgs}" ${ARGN})
+
+	message(DEBUG "exporting targets for project ${PACKAGE_PROJECT_NAME} in namespace ${PACKAGE_PROJECT_NAMESPACE}")
+
+	INSTALL(
+		EXPORT ${PACKAGE_PROJECT_NAME}-targets
+		NAMESPACE "${PACKAGE_PROJECT_NAMESPACE}::"
+		FILE "${PACKAGE_PROJECT_NAME}Targets.cmake"
+		DESTINATION ${CMAKE_BINARY_DIR}
+		COMPONENT ${PACKAGE_PROJECT_NAME}
+	)
+
+	# TODO: automatically generate from code
+	CONFIGURE_FILE(
+	  "${PACKAGE_PROJECT_SOURCE}/${PACKAGE_PROJECT_NAME}Config.cmake.in"
+		"${CMAKE_BINARY_DIR}/${PACKAGE_PROJECT_NAME}Config.cmake" @ONLY)
+
+	CONFIGURE_FILE(
+	  "${PACKAGE_PROJECT_SOURCE}/${PACKAGE_PROJECT_NAME}ConfigVersion.cmake.in"
+		"${CMAKE_BINARY_DIR}/${PACKAGE_PROJECT_NAME}ConfigVersion.cmake" @ONLY)
+
+endfunction()
+
+function(conan_export)
+
+	set(options)
+	set(oneValueArgs PACKAGE REVISION USER CHANNEL PROFILE)
+	set(multiValueArgs SETTINGS OPTIONS)
+
+	cmake_parse_arguments(
+		CONAN_EXPORT
+		"${options}"
+		"${oneValueArgs}"
+		"${multiValueArgs}" ${ARGN})
+
+	add_custom_target(conan-package ALL)
+
+	set(CONAN_PACKAGE_STR "${CONAN_EXPORT_PACKAGE}/${CONAN_EXPORT_REVISION}@${CONAN_EXPORT_USER}/${CONAN_EXPORT_CHANNEL}")
+	message(STATUS "CONAN_PACKAGE_STR for project ${PROJECT_NAME} package has been set to ${CONAN_PACKAGE_STR}")
+
+	# parse the conan command
+	foreach(FLAG ${CONAN_EXPORT_SETTINGS})
+		set(CONAN_FLAG_STR "${CONAN_FLAG_STR} -s ${FLAG}")
+	endforeach()
+
+	message(DEBUG "CONAN_FLAG_STR set to ${CONAN_FLAG_STR}")
+
+	foreach(FLAG ${CONAN_EXPORT_OPTIONS})
+		set(CONAN_OPTS_STR "${CONAN_OPTS_STR} -o ${FLAG}")
+	endforeach()
+
+	# note: in conan < 1.14, a bug makes the following command to run twice
+	INSTALL(CODE "message(STATUS \"execute command conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan\" )")
+	INSTALL(CODE "execute_process(COMMAND conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan )")
 
 endfunction()
