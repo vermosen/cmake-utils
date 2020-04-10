@@ -121,8 +121,8 @@ macro(load_packages)
 
 	# important: keep as a macro to fwd to calling scope
     set(options UPDATE)
-	set(oneValueArgs PROFILE OPTIONS SETTINGS)
-	set(multiValueArgs NAME)
+	set(oneValueArgs PROFILE)
+	set(multiValueArgs NAME OPTIONS SETTINGS)
 
 	cmake_parse_arguments(
 		LOAD_PACKAGES "${options}"
