@@ -39,14 +39,14 @@ function(get_current_date)
 
 	message(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}")
 
-	IF(UNIX)
+	if(UNIX)
 		EXECUTE_PROCESS(COMMAND "date" ${GET_DATE_FORMAT} OUTPUT_VARIABLE CURRENT_DATE)
 		STRING(REGEX REPLACE "\n$" "" CURRENT_DATE "${CURRENT_DATE}")
 		message(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}, assigning value ${CURRENT_DATE}")
 		set(${GET_DATE_OUT} ${CURRENT_DATE} PARENT_SCOPE)
-	ELSE()
+	else()
 		message(FATAL_ERROR "not implemented")
-	ENDIF()
+	endif()
 
 endfunction(get_current_date)
 
@@ -68,14 +68,14 @@ macro(setup_package)
 	message(DEBUG "${SETUP_PACKAGE_NAME} package setup ...")
 
 	# allows override of the user used
-	IF(DEFINED ${UCASE}_CONAN_USER)
+	if(DEFINED ${UCASE}_CONAN_USER)
 		message(STATUS "${libname} user has been overriden to ${${UCASE}_CONAN_USER}")
 	else()
 		set(${UCASE}_CONAN_USER ${CONAN_USER})
 	endif()
 
 	# allows override of the channel used
-	IF(DEFINED ${UCASE}_CONAN_CHANNEL)
+	if(DEFINED ${UCASE}_CONAN_CHANNEL)
 		message(STATUS "${libname} channel has been overriden to ${${UCASE}_CONAN_CHANNEL}")
 	else()
 		set(${UCASE}_CONAN_CHANNEL ${CONAN_CHANNEL})
@@ -134,7 +134,7 @@ macro(load_packages)
 
 	message(STATUS "packages to be loaded: ${REPOS} with configuration ${CMAKE_BUILD_TYPE}, settings ${LOAD_PACKAGES_SETTINGS} and options string ${LOAD_PACKAGES_OPTIONS}")
 
-	IF (${LOAD_PACKAGES_UPDATE})
+	if (${LOAD_PACKAGES_UPDATE})
 		conan_cmake_run(
 			REQUIRES ${REPOS}
 			OPTIONS ${LOAD_PACKAGES_OPTIONS}
@@ -146,7 +146,7 @@ macro(load_packages)
 			BUILD_TYPE ${CMAKE_BUILD_TYPE}
 			UPDATE ON
 		)
-	ELSE()
+	else()
 	conan_cmake_run(
 		REQUIRES ${REPOS}
 		OPTIONS ${LOAD_PACKAGES_OPTIONS}
@@ -157,7 +157,7 @@ macro(load_packages)
 		BUILD missing
 		BUILD_TYPE ${CMAKE_BUILD_TYPE}
 	)
-	ENDIF()
+	endif()
 
 	conan_global_flags()
 
@@ -231,7 +231,7 @@ function(install_library)
 
 	message(DEBUG "exporting ${INSTALL_LIBRARY_NAME} lib into ${INSTALL_LIBRARY_PACKAGE}-targets...")
 
-	INSTALL(
+	install(
  		TARGETS ${INSTALL_LIBRARY_NAME}
 		EXPORT "${INSTALL_LIBRARY_PACKAGE}-targets"
  		LIBRARY DESTINATION ${INSTALL_LIB_DIR}
@@ -272,7 +272,7 @@ function(install_binary)
 
 	set_target_properties(${INSTALL_BINARY_TARGET} PROPERTIES OUTPUT_NAME "${INSTALL_BINARY_BINARY}")
 
-	INSTALL(
+	install(
 		TARGETS ${INSTALL_BINARY_TARGET}
 		RUNTIME DESTINATION ${INSTALL_BIN_DIR}/${INSTALL_BINARY_SUBFOLDER}
 		COMPONENT ${INSTALL_BINARY_COMPONENT}
@@ -446,7 +446,7 @@ function(package_project)
 
 	message(DEBUG "exporting targets for project ${PACKAGE_PROJECT_NAME} in namespace ${PACKAGE_PROJECT_NAMESPACE}")
 
-	INSTALL(
+	install(
 		EXPORT ${PACKAGE_PROJECT_NAME}-targets
 		NAMESPACE "${PACKAGE_PROJECT_NAMESPACE}::"
 		FILE "${PACKAGE_PROJECT_NAME}Targets.cmake"
@@ -494,7 +494,7 @@ function(conan_export)
 	endforeach()
 
 	# note: in conan < 1.14, a bug makes the following command to run twice
-	INSTALL(CODE "message(STATUS \"execute command conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan\" )")
-	INSTALL(CODE "execute_process(COMMAND conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan )")
+	install(CODE "message(STATUS \"execute command conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan\" )")
+	install(CODE "execute_process(COMMAND conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan )")
 
 endfunction()
