@@ -20,6 +20,45 @@ function(message)
   endif()
 endfunction(message)
 
+function(Find_WSL)
+	
+	if(UNIX)
+
+		set(CMD_RES "")
+		set(CMD_OUT "")
+		set(CMD_ERR "")
+		
+		execute_process(
+			COMMAND /usr/bin/uname -r 
+			RESULT_VARIABLE CMD_RES
+			OUTPUT_VARIABLE CMD_OUT
+			ERROR_VARIABLE CMD_ERR
+		)
+		
+		message(DEBUG "WSL lookup result: ${CMD_RES}")
+		message(DEBUG "WSL lookup cout:   ${CMD_OUT}")
+		message(DEBUG "WSL lookup cerr:   ${CMD_ERR}")
+
+		if (${CMD_RES} EQUAL 1)
+			message(FATAL_ERROR "WSL lookup returned the error: ${CMD_ERR}")
+		endif()
+
+		set(RGX_OUT "")
+		string(REGEX MATCH "^.*Microsoft.*$" RGX_OUT ${CMD_OUT})
+		message(DEBUG "WSL regex match result: ${RGX_OUT}")
+
+		if(RGX_OUT STREQUAL "")
+			set(WSL_Found OFF PARENT_SCOPE)
+		else()
+			set(WSL_Found ON PARENT_SCOPE)
+		endif()
+	else()
+		set(WSL_Found OFF PARENT_SCOPE)	
+
+	endif(UNIX)
+endfunction(Find_WSL)
+
+
 function(get_current_date)
 
     # usage 
@@ -421,7 +460,7 @@ function(import_python)
 	set(PYTHON_INCLUDE_PATH			${Python3_INCLUDE_DIRS}		PARENT_SCOPE)
 	set(PYTHONLIBS_VERSION_STRING	${Python3_VERSION}			PARENT_SCOPE)
 
-	message(message "PYTHON_EXECUTABLE set to location: ${PYTHON_EXECUTABLE}"				)
+	message(INFO "PYTHON_EXECUTABLE set to location: ${PYTHON_EXECUTABLE}")
 
 	message(DEBUG "PYTHONLIBS_FOUND set to value: ${PYTHONLIBS_FOUND}"						)
 	message(DEBUG "PYTHON_LIBRARIES_DIRS set to location: ${PYTHON_LIBRARIES_DIRS}"			)
