@@ -310,11 +310,12 @@ function(install_binary)
 	message(DEBUG "Project components list updated to: ${tmp}")
 	set_property(GLOBAL PROPERTY ProjectComponents "${tmp}")
 
+	# set the binary directory
 	set_target_properties(${INSTALL_BINARY_TARGET} PROPERTIES OUTPUT_NAME "${INSTALL_BINARY_BINARY}")
 
 	install(
 		TARGETS ${INSTALL_BINARY_TARGET}
-		RUNTIME DESTINATION ${INSTALL_BINARY_SUBFOLDER}
+		RUNTIME DESTINATION ${INSTALL_BIN_DIR}/${INSTALL_BINARY_SUBFOLDER}
 		COMPONENT ${INSTALL_BINARY_PACKAGE}
 	)
 
@@ -322,7 +323,7 @@ endfunction()
 
 function(add_gtest)
 
-  set(options)
+  set(options INSTALL)
   set(oneValueArgs BINARY TARGET SUBFOLDER)
   set(multiValueArgs)
 
@@ -339,7 +340,11 @@ function(add_gtest)
     TARGET ${ADD_GTEST_TARGET}
   )
 
-  install_binary(BINARY ${ADD_GTEST_BINARY} TARGET ${ADD_GTEST_TARGET} SUBFOLDER ${ADD_GTEST_SUBFOLDER})
+  # add the test binary to the installation folder
+  if(ADD_GTEST_INSTALL)
+	message(DEBUG "ADD_GTEST_INSTALL flag is ON")
+    install_binary(BINARY ${ADD_GTEST_BINARY} TARGET ${ADD_GTEST_TARGET} SUBFOLDER ${ADD_GTEST_SUBFOLDER})
+  endif()
 
 endfunction()
 
