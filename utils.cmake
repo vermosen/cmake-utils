@@ -538,7 +538,6 @@ function(conan_export)
 
 endfunction()
 
-
 function(package_binaries)
 
 	# TODO: add project name, version
@@ -547,12 +546,13 @@ function(package_binaries)
 	set(multiValueArgs)
 
 	cmake_parse_arguments(
-		PACKAGE_PROJECT
+		PACKAGE_BINARIES
 		"${options}"
 		"${oneValueArgs}"
 		"${multiValueArgs}" ${ARGN})
 
 	message(DEBUG "invoking function package_binaries")
+	message(DEBUG "PACKAGE_BINARIES_PREFIX set to ${PACKAGE_BINARIES_PREFIX}")
 
 	# cpack setup
 	set(CPACK_RPM_COMPONENT_INSTALL ON)																	# Enables Component Packaging
@@ -560,10 +560,10 @@ function(package_binaries)
 	set(CPACK_GENERATOR "RPM")
 	set(CPACK_PACKAGE_VERSION ${${PROJECT_NAME_U}_MAJOR_VERSION}.${${PROJECT_NAME_U}_MINOR_VERSION})	# package version will show up as 0.1-71774 in yum
 	set(CPACK_RPM_PACKAGE_RELEASE ${${PROJECT_NAME_U}_COMMIT_VERSION})
-	set(CPACK_PACKAGE_CONTACT ${PACKAGE_BINARY_CONTACT})
-	set(CPACK_PACKAGE_VENDOR ${PACKAGE_BINARY_VENDOR})
-	set(CPACK_PACKAGING_INSTALL_PREFIX "${PACKAGE_BINARY_PREFIX}/${${PROJECT_NAME_U}_VERSION}")
-	set(CMAKE_PROJECT_HOMEPAGE_URL ${PACKAGE_BINARY_HOMEPAGE})
+	set(CPACK_PACKAGE_CONTACT ${PACKAGE_BINARIES_CONTACT})
+	set(CPACK_PACKAGE_VENDOR ${PACKAGE_BINARIES_VENDOR})
+	set(CPACK_PACKAGING_INSTALL_PREFIX "${PACKAGE_BINARIES_PREFIX}/${${PROJECT_NAME_U}_VERSION}")
+	set(CMAKE_PROJECT_HOMEPAGE_URL ${PACKAGE_BINARIES_HOMEPAGE})
 
 	get_property(tmp GLOBAL PROPERTY ProjectComponents)
 
@@ -584,7 +584,7 @@ function(package_binaries)
 		# create the post install script in root ...
 		set(POST_INSTALL_FILE "${PROJECT_BINARY_DIR}/deployment/${COMPONENT}-${${PROJECT_NAME_U}_VERSION}-${CMAKE_CONF_LC}-${CMAKE_ARCH}.rpm.post")
 		file(WRITE ${POST_INSTALL_FILE}
-			"mkdir -p ${PACKAGE_BINARY_PREFIX}/bin/${CMAKE_CONF} \nrm -Rf ${PACKAGE_BINARY_PREFIX}/bin/${CMAKE_CONF}/${COMPONENT} \nln -s ${PACKAGE_BINARY_PREFIX}/${${PROJECT_NAME_U}_VERSION}/bin/${CMAKE_CONF}/${COMPONENT} ${PACKAGE_BINARY_PREFIX}/bin/${CMAKE_CONF}/${COMPONENT}")
+			"mkdir -p ${PACKAGE_BINARIES_PREFIX}/bin/${CMAKE_CONF} \nrm -Rf ${PACKAGE_BINARIES_PREFIX}/bin/${CMAKE_CONF}/${COMPONENT} \nln -s ${PACKAGE_BINARIES_PREFIX}/${${PROJECT_NAME_U}_VERSION}/bin/${CMAKE_CONF}/${COMPONENT} ${PACKAGE_BINARIES_PREFIX}/bin/${CMAKE_CONF}/${COMPONENT}")
 
 		# ... and attach it to the rpm
 		set(CPACK_RPM_${COMPONENT}_POST_INSTALL_SCRIPT_FILE ${POST_INSTALL_FILE})
