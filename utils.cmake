@@ -20,6 +20,7 @@ function(message)
   endif()
 endfunction(message)
 
+
 function(Find_WSL)
 	
 	if(UNIX)
@@ -58,7 +59,6 @@ function(Find_WSL)
 	endif(UNIX)
 endfunction(Find_WSL)
 
-
 function(get_current_date)
 
     # usage 
@@ -78,14 +78,14 @@ function(get_current_date)
 
 	message(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}")
 
-	if(UNIX)
+	IF(UNIX)
 		EXECUTE_PROCESS(COMMAND "date" ${GET_DATE_FORMAT} OUTPUT_VARIABLE CURRENT_DATE)
 		STRING(REGEX REPLACE "\n$" "" CURRENT_DATE "${CURRENT_DATE}")
 		message(DEBUG "GET_DATE_OUT value is ${GET_DATE_OUT}, assigning value ${CURRENT_DATE}")
 		set(${GET_DATE_OUT} ${CURRENT_DATE} PARENT_SCOPE)
-	else()
+	ELSE()
 		message(FATAL_ERROR "not implemented")
-	endif()
+	ENDIF()
 
 endfunction(get_current_date)
 
@@ -107,14 +107,14 @@ macro(setup_package)
 	message(DEBUG "${SETUP_PACKAGE_NAME} package setup ...")
 
 	# allows override of the user used
-	if(DEFINED ${UCASE}_CONAN_USER)
+	IF(DEFINED ${UCASE}_CONAN_USER)
 		message(STATUS "${libname} user has been overriden to ${${UCASE}_CONAN_USER}")
 	else()
 		set(${UCASE}_CONAN_USER ${CONAN_USER})
 	endif()
 
 	# allows override of the channel used
-	if(DEFINED ${UCASE}_CONAN_CHANNEL)
+	IF(DEFINED ${UCASE}_CONAN_CHANNEL)
 		message(STATUS "${libname} channel has been overriden to ${${UCASE}_CONAN_CHANNEL}")
 	else()
 		set(${UCASE}_CONAN_CHANNEL ${CONAN_CHANNEL})
@@ -173,7 +173,7 @@ macro(load_packages)
 
 	message(STATUS "packages to be loaded: ${REPOS} with configuration ${CMAKE_BUILD_TYPE}, settings ${LOAD_PACKAGES_SETTINGS} and options string ${LOAD_PACKAGES_OPTIONS}")
 
-	if (${LOAD_PACKAGES_UPDATE})
+	IF (${LOAD_PACKAGES_UPDATE})
 		conan_cmake_run(
 			REQUIRES ${REPOS}
 			OPTIONS ${LOAD_PACKAGES_OPTIONS}
@@ -185,7 +185,7 @@ macro(load_packages)
 			BUILD_TYPE ${CMAKE_BUILD_TYPE}
 			UPDATE ON
 		)
-	else()
+	ELSE()
 	conan_cmake_run(
 		REQUIRES ${REPOS}
 		OPTIONS ${LOAD_PACKAGES_OPTIONS}
@@ -196,7 +196,7 @@ macro(load_packages)
 		BUILD missing
 		BUILD_TYPE ${CMAKE_BUILD_TYPE}
 	)
-	endif()
+	ENDIF()
 
 	conan_global_flags()
 
@@ -270,7 +270,7 @@ function(install_library)
 
 	message(DEBUG "exporting ${INSTALL_LIBRARY_NAME} lib into ${INSTALL_LIBRARY_PACKAGE}-targets...")
 
-	install(
+	INSTALL(
  		TARGETS ${INSTALL_LIBRARY_NAME}
 		EXPORT "${INSTALL_LIBRARY_PACKAGE}-targets"
  		LIBRARY DESTINATION ${INSTALL_LIB_DIR}
@@ -284,7 +284,7 @@ endfunction()
 function(install_binary)
 
 	set(options)
-	set(oneValueArgs BINARY TARGET COMPONENT SUBFOLDER)
+	set(oneValueArgs BINARY TARGET PACKAGE SUBFOLDER)
 	set(multiValueArgs)
 
 	cmake_parse_arguments(
@@ -293,28 +293,28 @@ function(install_binary)
 		"${oneValueArgs}"
 		"${multiValueArgs}" ${ARGN})
 
-	if (INSTALL_BINARY_COMPONENT)
+	if (INSTALL_BINARY_PACKAGE)
 	else()
-		set(INSTALL_BINARY_COMPONENT Unspecified)
+		set(INSTALL_BINARY_PACKAGE Unspecified)
 	endif()
 
-	# add the component to the component list
-	#GET_PROPERTY(tmp GLOBAL PROPERTY ProjectComponents)
-	#set(tmp "${tmp};${INSTALL_BINARY_PACKAGE}")
-	#list(REMOVE_DUPLICATES tmp)
-	#message(DEBUG "Project components is set to: ${tmp}")
-	#SET_PROPERTY(GLOBAL PROPERTY ProjectComponents "${tmp}")
-
 	message(DEBUG "set ${INSTALL_BINARY_TARGET} install path to ${CMAKE_INSTALL_PREFIX}/bin")
-	message(DEBUG "adding target ${INSTALL_BINARY_TARGET} to component ${INSTALL_BINARY_COMPONENT}")
+	message(DEBUG "adding target ${INSTALL_BINARY_TARGET} to component ${INSTALL_BINARY_PACKAGE}")
 	message(DEBUG "INSTALL_BINARY_TARGET binary name set to ${INSTALL_BINARY_BINARY}")
+
+	# add the component to the component list
+	get_property(tmp GLOBAL PROPERTY ProjectComponents)
+	set(tmp "${tmp};${INSTALL_BINARY_PACKAGE}")
+	list(REMOVE_DUPLICATES tmp)
+	message(DEBUG "Project components list updated to: ${tmp}")
+	set_property(GLOBAL PROPERTY ProjectComponents "${tmp}")
 
 	set_target_properties(${INSTALL_BINARY_TARGET} PROPERTIES OUTPUT_NAME "${INSTALL_BINARY_BINARY}")
 
 	install(
 		TARGETS ${INSTALL_BINARY_TARGET}
 		RUNTIME DESTINATION ${INSTALL_BIN_DIR}/${INSTALL_BINARY_SUBFOLDER}
-		COMPONENT ${INSTALL_BINARY_COMPONENT}
+		COMPONENT ${INSTALL_BINARY_PACKAGE}
 	)
 
 endfunction()
@@ -460,7 +460,7 @@ function(import_python)
 	set(PYTHON_INCLUDE_PATH			${Python3_INCLUDE_DIRS}		PARENT_SCOPE)
 	set(PYTHONLIBS_VERSION_STRING	${Python3_VERSION}			PARENT_SCOPE)
 
-	message(INFO "PYTHON_EXECUTABLE set to location: ${PYTHON_EXECUTABLE}")
+	message(DEBUG "PYTHON_EXECUTABLE set to location: ${PYTHON_EXECUTABLE}"				)
 
 	message(DEBUG "PYTHONLIBS_FOUND set to value: ${PYTHONLIBS_FOUND}"						)
 	message(DEBUG "PYTHON_LIBRARIES_DIRS set to location: ${PYTHON_LIBRARIES_DIRS}"			)
@@ -485,7 +485,7 @@ function(package_project)
 
 	message(DEBUG "exporting targets for project ${PACKAGE_PROJECT_NAME} in namespace ${PACKAGE_PROJECT_NAMESPACE}")
 
-	install(
+	INSTALL(
 		EXPORT ${PACKAGE_PROJECT_NAME}-targets
 		NAMESPACE "${PACKAGE_PROJECT_NAMESPACE}::"
 		FILE "${PACKAGE_PROJECT_NAME}Targets.cmake"
@@ -494,11 +494,11 @@ function(package_project)
 	)
 
 	# TODO: automatically generate from code
-	CONFIGURE_FILE(
+	configure_file(
 	  "${PACKAGE_PROJECT_SOURCE}/${PACKAGE_PROJECT_NAME}Config.cmake.in"
 		"${CMAKE_BINARY_DIR}/${PACKAGE_PROJECT_NAME}Config.cmake" @ONLY)
 
-	CONFIGURE_FILE(
+	configure_file(
 	  "${PACKAGE_PROJECT_SOURCE}/${PACKAGE_PROJECT_NAME}ConfigVersion.cmake.in"
 		"${CMAKE_BINARY_DIR}/${PACKAGE_PROJECT_NAME}ConfigVersion.cmake" @ONLY)
 
@@ -533,7 +533,71 @@ function(conan_export)
 	endforeach()
 
 	# note: in conan < 1.14, a bug makes the following command to run twice
-	install(CODE "message(STATUS \"execute command conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan\" )")
-	install(CODE "execute_process(COMMAND conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan )")
+	INSTALL(CODE "message(STATUS \"execute command conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan\" )")
+	INSTALL(CODE "execute_process(COMMAND conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan )")
+
+endfunction()
+
+
+function(package_binaries)
+
+	# TODO: add project name, version
+	set(options)
+	set(oneValueArgs CONTACT VENDOR PREFIX HOMEPAGE CHANNEL)
+	set(multiValueArgs)
+
+	cmake_parse_arguments(
+		PACKAGE_PROJECT
+		"${options}"
+		"${oneValueArgs}"
+		"${multiValueArgs}" ${ARGN})
+
+	message(DEBUG "invoking function package_binaries")
+
+	# cpack setup
+	set(CPACK_RPM_COMPONENT_INSTALL ON)																	# Enables Component Packaging
+	set(CPACK_COMPONENTS_IGNORE_GROUPS 1)																# ignore groups for now on
+	set(CPACK_GENERATOR "RPM")
+	set(CPACK_PACKAGE_VERSION ${${PROJECT_NAME_U}_MAJOR_VERSION}.${${PROJECT_NAME_U}_MINOR_VERSION})	# package version will show up as 0.1-71774 in yum
+	set(CPACK_RPM_PACKAGE_RELEASE ${${PROJECT_NAME_U}_COMMIT_VERSION})
+	set(CPACK_PACKAGE_CONTACT ${PACKAGE_BINARY_CONTACT})
+	set(CPACK_PACKAGE_VENDOR ${PACKAGE_BINARY_VENDOR})
+	set(CPACK_PACKAGING_INSTALL_PREFIX "${PACKAGE_BINARY_PREFIX}/${${PROJECT_NAME_U}_VERSION}")
+	set(CMAKE_PROJECT_HOMEPAGE_URL ${PACKAGE_BINARY_HOMEPAGE})
+
+	get_property(tmp GLOBAL PROPERTY ProjectComponents)
+
+	string(TOLOWER ${CMAKE_CONF} CMAKE_CONF_LC)
+
+	list(REMOVE_ITEM tmp "Unspecified")
+
+	foreach(COMPONENT ${tmp})
+
+		message(DEBUG "add cpack attributes for component ${COMPONENT}")
+
+		set(CPACK_RPM_${COMPONENT}_FILE_NAME "${COMPONENT}-${${PROJECT_NAME_U}_VERSION}-${CMAKE_CONF_LC}-${CMAKE_ARCH}.rpm")
+		set(CPACK_RPM_${COMPONENT}_PACKAGE_NAME "${COMPONENT}-${CMAKE_CONF_LC}-${CMAKE_ARCH}")
+		
+		# todo: check what values are possible
+		#set(CPACK_RPM_${COMPONENT}_PACKAGE_ARCHITECTURE "${ARCH_FLAG}")
+
+		# create the post install script in root ...
+		set(POST_INSTALL_FILE "${PROJECT_BINARY_DIR}/deployment/${COMPONENT}-${${PROJECT_NAME_U}_VERSION}-${CMAKE_CONF_LC}-${CMAKE_ARCH}.rpm.post")
+		file(WRITE ${POST_INSTALL_FILE}
+			"mkdir -p ${PACKAGE_BINARY_PREFIX}/bin/${CMAKE_CONF} \nrm -Rf ${PACKAGE_BINARY_PREFIX}/bin/${CMAKE_CONF}/${COMPONENT} \nln -s ${PACKAGE_BINARY_PREFIX}/${${PROJECT_NAME_U}_VERSION}/bin/${CMAKE_CONF}/${COMPONENT} ${PACKAGE_BINARY_PREFIX}/bin/${CMAKE_CONF}/${COMPONENT}")
+
+		# ... and attach it to the rpm
+		set(CPACK_RPM_${COMPONENT}_POST_INSTALL_SCRIPT_FILE ${POST_INSTALL_FILE})
+
+		# TODO: add those in install flags
+		# CPACK_RPM_<component>_PACKAGE_SUMMARY -> description
+
+		# other available flags: see https://cmake.org/cmake/help/v3.15/cpack_gen/rpm.html#cpack_gen:CPack%20RPM%20Generator
+
+	endforeach()
+
+	# cpack invocation
+	set(CPACK_COMPONENTS_ALL ${tmp})
+	include(CPack)
 
 endfunction()
