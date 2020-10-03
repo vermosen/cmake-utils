@@ -136,7 +136,7 @@ function(append_global_property)
 
 	get_property(TMP GLOBAL PROPERTY ${APPEND_PROPERTY_NAME})
 
-	foreach(VAL APPEND_PROPERTY_VALUES)
+	foreach(VAL ${APPEND_PROPERTY_VALUES})
 		set(TMP "${TMP};${VAL}")
 	endforeach()
 	
