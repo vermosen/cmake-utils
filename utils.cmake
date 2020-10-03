@@ -124,6 +124,28 @@ macro(setup_package)
 
 endmacro()
 
+function(append_global_property)
+
+	set(options)
+	set(oneValueArgs NAME )
+	set(multiValueArgs VALUES)
+
+	cmake_parse_arguments(
+		APPEND_PROPERTY "${options}"
+		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+	get_property(TMP GLOBAL PROPERTY ${APPEND_PROPERTY_NAME})
+
+	foreach(VAL APPEND_PROPERTY_VALUES)
+		set(TMP "${TMP};${VAL}")
+	endforeach()
+	
+	list(REMOVE_DUPLICATES TMP)
+	message(DEBUG "Project components list updated to: ${TMP}")
+	set_property(GLOBAL PROPERTY ${APPEND_PROPERTY_NAME} ${TMP})
+
+endfunction(append_global_property)
+
 function(load_debug_info)
 
 	set(options)
@@ -304,11 +326,8 @@ function(install_binary)
 	message(DEBUG "INSTALL_BINARY_TARGET binary name set to ${INSTALL_BINARY_BINARY}")
 
 	# add the component to the component list
-	get_property(tmp GLOBAL PROPERTY ProjectComponents)
-	set(tmp "${tmp};${INSTALL_BINARY_PACKAGE}")
-	list(REMOVE_DUPLICATES tmp)
-	message(DEBUG "Project components list updated to: ${tmp}")
-	set_property(GLOBAL PROPERTY ProjectComponents "${tmp}")
+
+	append_global_property(NAME ProjectComponents VALUES ${INSTALL_BINARY_PACKAGE})
 
 	# set the binary directory
 	set_target_properties(${INSTALL_BINARY_TARGET} PROPERTIES OUTPUT_NAME "${INSTALL_BINARY_BINARY}")
@@ -596,7 +615,7 @@ function(package_binaries)
 		message(DEBUG "POST_INSTALL_FILE path set to ${POST_INSTALL_FILE}")
 
 		file(WRITE ${POST_INSTALL_FILE}
-			"mkdir -p ${PACKAGE_BINARIES_PREFIX}/bin/${CMAKE_CONF} \nrm -Rf ${PACKAGE_BINARIES_PREFIX}/bin/${CMAKE_CONF}/${COMPONENT} \nln -s ${PACKAGE_BINARIES_PREFIX}/${${PROJECT_NAME_U}_VERSION}/bin/${CMAKE_CONF}/${COMPONENT} ${PACKAGE_BINARIES_PREFIX}/bin/${CMAKE_CONF}/${COMPONENT}")
+			"mkdir -p ${PACKAGE_BINARIES_PREFIX}/bin/${CMAKE_CONF} \nrm -Rf ${PACKAGE_BINARIES_PREFIX}/bin/${CMAKE_CONF}/${COMPONENT} \nln -s ${PACKAGE_BINARIES_PREFIX}/${${PROJECT_NAME_U}_VERSION}/bin/${CMAKE_CONF}/${CMAKE_ARCH}/${COMPONENT} ${PACKAGE_BINARIES_PREFIX}/bin/${CMAKE_CONF}/${COMPONENT}")
 
 		# ... and attach it to the rpm
 		set(CPACK_RPM_${COMPONENT}_POST_INSTALL_SCRIPT_FILE ${POST_INSTALL_FILE})
