@@ -7,8 +7,9 @@ message(STATUS   ":===================:")
 message(STATUS   ":loading utils.cmake:")
 message(STATUS   ":===================:\n")
 
-# message function override
 function(message)
+
+  # message function override
   list(GET ARGV 0 MessageType)
   list(REMOVE_AT ARGV 0)
   if(MessageType STREQUAL DEBUG)
@@ -20,9 +21,9 @@ function(message)
   endif()
 endfunction(message)
 
-
 function(Find_WSL)
-	
+
+	# utility to find if wsl is the host env	
 	if(UNIX)
 
 		set(CMD_RES "")
@@ -58,6 +59,37 @@ function(Find_WSL)
 
 	endif(UNIX)
 endfunction(Find_WSL)
+
+function(find_conan)
+
+    set(options)
+	set(oneValueArgs BINDIR REQUIRES)
+	set(multiValueArgs)
+
+	cmake_parse_arguments(
+		FIND_CONAN "${options}"
+		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+	if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
+
+	    message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
+
+		# TODO: compatible version with windows AND wsl
+		#execute_process(
+		#	COMMAND /usr/bin/wget https://github.com/conan-io/cmake-conan/raw/v0.15/conan.cmake
+		#	WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+		#)
+   
+	   # this one silently fails in WSL
+	   file(DOWNLOAD "https://github.com/conan-io/cmake-conan/raw/v0.15/conan.cmake"
+	       "${CMAKE_BINARY_DIR}/conan.cmake")
+	endif()
+
+	include("${CMAKE_BINARY_DIR}/conan.cmake")
+	set(CMAKE_PROGRAM_PATH "${FIND_CONAN_BINDIR};${CMAKE_PROGRAM_PATH}")
+	conan_check(VERSION ${FIND_CONAN_REQUIRES} REQUIRED)
+
+endfunction(find_conan)
 
 function(get_current_date)
 
@@ -268,37 +300,41 @@ function(install_library)
 		set(INSTALL_LIBRARY_PACKAGE ${INSTALL_LIBRARY_NAME})
 	endif()
 
-	message(DEBUG "set ${INSTALL_LIBRARY_NAME} install path to ${PROJECT_LIB_SUFFIX}")
-	message(DEBUG "${INSTALL_LIBRARY_NAME} include files: ${PROJECT_INCLUDE_SUFFIX}")
-	message(DEBUG "PROJECT_SOURCE_DIR set to: ${PROJECT_SOURCE_DIR}/${PROJECT_SRC_SUFFIX}")
+	message(DEBUG "CMAKE_CURRENT_SOURCE_DIR set to ${CMAKE_CURRENT_SOURCE_DIR}")
+	message(DEBUG "set ${INSTALL_LIBRARY_NAME} install path to ${INSTALL_LIBRARY_SUFFIX}")
+	message(DEBUG "${INSTALL_LIBRARY_NAME} include files: ${INSTALL_INCLUDE_SUFFIX}")
+	message(DEBUG "PROJECT_SOURCE_DIR set to: ${PROJECT_SOURCE_DIR}/${INSTALL_INCLUDE_SUFFIX}")
 	message(DEBUG "INSTALL_LIBRARY_PACKAGE set to: ${INSTALL_LIBRARY_PACKAGE}")
 
 	# create the headers with the correct path layout
 	foreach(HEADER_FILE ${INSTALL_LIBRARY_HEADERS})
-		file(RELATIVE_PATH REL "${PROJECT_SOURCE_DIR}/${PROJECT_SRC_SUFFIX}" ${HEADER_FILE})
+		
+		file(RELATIVE_PATH REL ${CMAKE_CURRENT_SOURCE_DIR}/.. ${HEADER_FILE})
+		message(DEBUG "${HEADER_FILE} relative path set to ${REL}")
+
 		string(TOLOWER ${PROJECT_NAME} PATH_PROJECT_EXT)
 
 		# ... and to the custom install location
-		set(TARGET_INCLUDE_PATH "${PROJECT_INCLUDE_SUFFIX}/${REL}")
+		set(TARGET_INCLUDE_PATH "${INSTALL_INCLUDE_SUFFIX}/${REL}")
 		message(DEBUG "header ${HEADER_FILE} path set to ${TARGET_INCLUDE_PATH}")
 
 		# get the path component
 		get_filename_component(FILE_DIR ${TARGET_INCLUDE_PATH} DIRECTORY)
-		message(DEBUG "header ${HEADER_FILE} will be copied in ${FILE_DIR}")
+		message(DEBUG "header ${HEADER_FILE} will be copied in ${CMAKE_INSTALL_PREFIX}/${FILE_DIR}")
 
-		file(MAKE_DIRECTORY "${FILE_DIR}/${LIB_INSTALL_PREFIX}")
-		install(FILES ${HEADER_FILE} DESTINATION "${FILE_DIR}/${LIB_INSTALL_PREFIX}")
+		file(MAKE_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${FILE_DIR}/${INSTALL_LIBRARY_SUFFIX}")
+		install(FILES ${HEADER_FILE} DESTINATION "${CMAKE_INSTALL_PREFIX}/${FILE_DIR}/${INSTALL_LIBRARY_SUFFIX}")
 	endforeach()
 
 	message(DEBUG "exporting ${INSTALL_LIBRARY_NAME} lib into ${INSTALL_LIBRARY_PACKAGE}-targets...")
 
-	# TODO: will fail to package shared libs ...
+	# TODO: this will fail to package shared libs ...
 	install(
  		TARGETS ${INSTALL_LIBRARY_NAME}
-		EXPORT "${INSTALL_LIBRARY_PACKAGE}-targets"
- 		LIBRARY DESTINATION ${INSTALL_LIB_DIR}
- 		ARCHIVE DESTINATION ${INSTALL_LIB_DIR}
-		RUNTIME DESTINATION ${INSTALL_BIN_DIR}
+		EXPORT ${INSTALL_LIBRARY_PACKAGE}-targets
+ 		LIBRARY DESTINATION ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIBRARY_SUFFIX}
+ 		ARCHIVE DESTINATION ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIBRARY_SUFFIX}
+		RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/${INSTALL_BINARY_SUFFIX}
  		COMPONENT ${${TARGET_NAME}_LIBRARY_PACKAGE}
  	)
 
@@ -321,7 +357,7 @@ function(install_binary)
 		set(INSTALL_BINARY_PACKAGE Unspecified)
 	endif()
 
-	message(DEBUG "set ${INSTALL_BINARY_TARGET} install path to ${CMAKE_INSTALL_PREFIX}/bin")
+	message(DEBUG "set ${INSTALL_BINARY_TARGET} install path to ${CMAKE_INSTALL_PREFIX}/${INSTALL_BINARY_SUFFIX}")
 	message(DEBUG "adding target ${INSTALL_BINARY_TARGET} to component ${INSTALL_BINARY_PACKAGE}")
 	message(DEBUG "INSTALL_BINARY_TARGET binary name set to ${INSTALL_BINARY_BINARY}")
 
@@ -334,7 +370,7 @@ function(install_binary)
 
 	install(
 		TARGETS ${INSTALL_BINARY_TARGET}
-		RUNTIME DESTINATION ${INSTALL_BIN_DIR}/${INSTALL_BINARY_SUBFOLDER}
+		RUNTIME DESTINATION ${CMAKE_INSTALL_PREFIX}/${INSTALL_BINARY_SUFFIX}/${INSTALL_BINARY_SUBFOLDER}
 		COMPONENT ${INSTALL_BINARY_PACKAGE}
 	)
 
@@ -404,7 +440,9 @@ macro(add_testsuite)
 endmacro()
 
 function(create_debug_conf)
-
+    
+	# utility function to create (if any) the 
+	# gdb pretty print file associated with a lib/project
 	set(options)
 	set(oneValueArgs)
 	set(multiValueArgs NAME)
@@ -496,43 +534,52 @@ function(import_python)
 
 endfunction()
 
-function(package_project)
+function(export_project)
 
 	set(options)
-	set(oneValueArgs NAME NAMESPACE SOURCE)
+	set(oneValueArgs NAME NAMESPACE REVISION DIRECTORY)
 	set(multiValueArgs)
 
 	cmake_parse_arguments(
-		PACKAGE_PROJECT
+		EXPORT_PROJECT
 		"${options}"
 		"${oneValueArgs}"
 		"${multiValueArgs}" ${ARGN})
 
-	message(DEBUG "exporting targets for project ${PACKAGE_PROJECT_NAME} in namespace ${PACKAGE_PROJECT_NAMESPACE}")
+	message(DEBUG "exporting targets for project ${EXPORT_PROJECT_NAME} v${EXPORT_PROJECT_REVISION} in namespace ${EXPORT_PROJECT_NAMESPACE}")
 
-	INSTALL(
-		EXPORT ${PACKAGE_PROJECT_NAME}-targets
-		NAMESPACE "${PACKAGE_PROJECT_NAMESPACE}::"
-		FILE "${PACKAGE_PROJECT_NAME}Targets.cmake"
-		DESTINATION ${CMAKE_BINARY_DIR}
-		COMPONENT ${PACKAGE_PROJECT_NAME}
+	string(TOUPPER ${EXPORT_PROJECT_NAME} PROJECT_NAME_U)
+
+	file(
+		WRITE "${CMAKE_BINARY_DIR}/${EXPORT_PROJECT_NAME}ConfigVersion.cmake"
+		"set(PACKAGE_VERSION "${EXPORT_PROJECT_REVISION}")"
 	)
 
-	# TODO: automatically generate from code
-	configure_file(
-	  "${PACKAGE_PROJECT_SOURCE}/${PACKAGE_PROJECT_NAME}Config.cmake.in"
-		"${CMAKE_BINARY_DIR}/${PACKAGE_PROJECT_NAME}Config.cmake" @ONLY)
-
-	configure_file(
-	  "${PACKAGE_PROJECT_SOURCE}/${PACKAGE_PROJECT_NAME}ConfigVersion.cmake.in"
-		"${CMAKE_BINARY_DIR}/${PACKAGE_PROJECT_NAME}ConfigVersion.cmake" @ONLY)
+	# generates the conan variables for the project
+	file(
+		WRITE "${CMAKE_BINARY_DIR}/${EXPORT_PROJECT_NAME}Config.cmake"
+		"set(${PROJECT_NAME_U}_CONAN_INCLUDE_DIRS_HINT ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_SUFFIX})\n"
+        "set(${PROJECT_NAME_U}_CONAN_LIBS_DIRS_HINT ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIBRARY_SUFFIX})\n"
+        "set(${PROJECT_NAME_U}_CONAN_BINS_DIRS_HINT ${CMAKE_INSTALL_PREFIX}/${INSTALL_BINARY_SUFFIX})\n"
+		"include(${CONAN_${PROJECT_NAME_U}_ROOT}/${PROJECT_NAME}Targets.cmake)\n"
+	)
+	
+	# TODO: we need at least 1 target exported with the corresponding export
+	# for the export to succeed. Hence a control or a warning may help here
+	install(
+		EXPORT ${EXPORT_PROJECT_NAME}-targets
+		NAMESPACE "${EXPORT_PROJECT_NAMESPACE}::"
+		FILE "${EXPORT_PROJECT_NAME}Targets.cmake"
+		DESTINATION ${CMAKE_BINARY_DIR}
+		COMPONENT ${EXPORT_PROJECT_NAME}
+	)
 
 endfunction()
 
 function(conan_export)
 
 	set(options)
-	set(oneValueArgs PACKAGE REVISION USER CHANNEL PROFILE)
+	set(oneValueArgs PACKAGE REVISION USER CHANNEL PROFILE DIRECTORY)
 	set(multiValueArgs SETTINGS OPTIONS)
 
 	cmake_parse_arguments(
@@ -543,9 +590,11 @@ function(conan_export)
 
 	add_custom_target(conan-package ALL)
 
+	message(DEBUG "CONAN_EXPORT_DIRECTORY set to ${CONAN_EXPORT_DIRECTORY}")
+
 	set(CONAN_PACKAGE_STR "${CONAN_EXPORT_PACKAGE}/${CONAN_EXPORT_REVISION}@${CONAN_EXPORT_USER}/${CONAN_EXPORT_CHANNEL}")
 	message(STATUS "CONAN_PACKAGE_STR for project ${PROJECT_NAME} package has been set to ${CONAN_PACKAGE_STR}")
-
+	
 	# parse the conan command
 	foreach(FLAG ${CONAN_EXPORT_SETTINGS})
 		set(CONAN_FLAG_STR "${CONAN_FLAG_STR} -s ${FLAG}")
@@ -557,9 +606,8 @@ function(conan_export)
 		set(CONAN_OPTS_STR "${CONAN_OPTS_STR} -o ${FLAG}")
 	endforeach()
 
-	# note: in conan < 1.14, a bug makes the following command to run twice
-	INSTALL(CODE "message(STATUS \"execute command conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan\" )")
-	INSTALL(CODE "execute_process(COMMAND conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/conan )")
+	install(CODE "message(STATUS \"execute command ${CONAN_BIN_PATH}/conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/${CONAN_EXPORT_DIRECTORY}\" )")
+	install(CODE "execute_process(COMMAND ${CONAN_BIN_PATH}/conan export-pkg . ${CONAN_PACKAGE_STR} -f -pr=${CONAN_EXPORT_PROFILE} -s build_type=${CMAKE_BUILD_TYPE} ${CONAN_FLAG_STR} ${CONAN_OPTS_STR} --source-folder=${PROJECT_HOME} --build-folder=${PROJECT_BINARY_DIR} WORKING_DIRECTORY ${PROJECT_HOME}/${CONAN_EXPORT_DIRECTORY} )")
 
 endfunction()
 
@@ -632,3 +680,31 @@ function(package_binaries)
 	include(CPack)
 
 endfunction()
+
+# the target subfolders must be defined here
+if (NOT DEFINED INSTALL_BINARY_SUFFIX)
+  set(INSTALL_BINARY_SUFFIX bin/${CMAKE_BUILD_TYPE} CACHE PATH "the binary install subfolder")
+  message(WARN "INSTALL_BINARY_SUFFIX was not set. Defaulting to ${INSTALL_BINARY_SUFFIX}")
+else()
+  message(DEBUG "INSTALL_BINARY_SUFFIX set to ${INSTALL_BINARY_SUFFIX}")
+endif()
+
+file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${INSTALL_BINARY_SUFFIX})
+
+if (NOT DEFINED INSTALL_LIBRARY_SUFFIX)
+  set(INSTALL_LIBRARY_SUFFIX lib/${CMAKE_BUILD_TYPE} CACHE PATH "the library install subfolder")
+  message(WARN "INSTALL_LIBRARY_SUFFIX was not set. Defaulting to ${INSTALL_LIBRARY_SUFFIX}")
+else()
+  message(DEBUG "INSTALL_LIBRARY_SUFFIX set to ${INSTALL_LIBRARY_SUFFIX}")
+endif()
+
+file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIBRARY_SUFFIX})
+
+if (NOT DEFINED INSTALL_INCLUDE_SUFFIX)
+  set(INSTALL_INCLUDE_SUFFIX include CACHE PATH "the binary install subfolder")
+  message(WARN "INSTALL_INCLUDE_SUFFIX was not set. Defaulting to ${INSTALL_INCLUDE_SUFFIX}")
+else()
+  message(DEBUG "INSTALL_INCLUDE_SUFFIX set to ${INSTALL_INCLUDE_SUFFIX}")
+endif()
+
+file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_SUFFIX})
