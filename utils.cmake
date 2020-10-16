@@ -708,3 +708,30 @@ else()
 endif()
 
 file(MAKE_DIRECTORY ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_SUFFIX})
+
+######################
+# R related function #
+######################
+
+# add a packaged test (test_that) to the test suite
+function(add_r_test)
+
+    set(options)
+	set(oneValueArgs MODULE FILE WORKING_DIRECTORY)
+	set(multiValueArgs)
+
+	cmake_parse_arguments(
+		ADD_R_TEST "${options}"
+		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+	string(CONCAT CMD
+		"res <- as.data.frame(devtools::test(filter='${ADD_R_TEST_FILE}'))\;"
+        "quit(status = (sum(res$failed) + sum(res$error) + sum(res$skipped) != 0))"
+	)
+
+	add_test(NAME ${ADD_R_TEST_MODULE}.r.test.${ADD_R_TEST_FILE}
+		COMMAND ${R_EXEC} -e ${CMD}
+		WORKING_DIRECTORY ${ADD_R_TEST_WORKING_DIRECTORY}
+	)
+
+endfunction()
