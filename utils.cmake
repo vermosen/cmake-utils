@@ -638,6 +638,12 @@ function(package_binaries)
 	set(CPACK_PACKAGING_INSTALL_PREFIX "${PACKAGE_BINARIES_PREFIX}/${${PROJECT_NAME_U}_VERSION}")
 	set(CMAKE_PROJECT_HOMEPAGE_URL ${PACKAGE_BINARIES_HOMEPAGE})
 
+	# prevent rpmbuild from stripping binaries when in debug mode
+	# ref: https://iangilham.com/2016/12/08/preventing-rpmbuild-stripping-symbols-with-cpack.html
+	if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+	  set(CPACK_RPM_SPEC_INSTALL_POST "/bin/true")
+	endif()
+
 	get_property(tmp GLOBAL PROPERTY ProjectComponents)
 
 	string(TOLOWER ${CMAKE_CONF} CMAKE_CONF_LC)
