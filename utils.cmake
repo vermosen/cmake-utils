@@ -552,7 +552,7 @@ function(export_project)
 
 	file(
 		WRITE "${CMAKE_BINARY_DIR}/${EXPORT_PROJECT_NAME}ConfigVersion.cmake"
-		"set(PACKAGE_VERSION "${EXPORT_PROJECT_REVISION}")"
+		"set(PACKAGE_VERSION \"${EXPORT_PROJECT_REVISION}\")"
 	)
 
 	# generates the conan variables for the project
