@@ -646,7 +646,7 @@ function(package_binaries)
 
 	get_property(tmp GLOBAL PROPERTY ProjectComponents)
 
-	string(TOLOWER ${CMAKE_CONF} CMAKE_CONF_LC)
+	string(TOLOWER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_LC)
 
 	list(REMOVE_ITEM tmp "Unspecified")
 
@@ -654,14 +654,14 @@ function(package_binaries)
 
 		message(DEBUG "add cpack attributes for component ${COMPONENT}")
 
-		set(CPACK_RPM_${COMPONENT}_FILE_NAME "${COMPONENT}-${${PROJECT_NAME_U}_VERSION}-${CMAKE_CONF_LC}-${CMAKE_ARCH}.rpm")
+		set(CPACK_RPM_${COMPONENT}_FILE_NAME "${COMPONENT}-${${PROJECT_NAME_U}_VERSION}-${CMAKE_BUILD_TYPE_LC}-${CMAKE_ARCH}.rpm")
 		
 		message(DEBUG "CPACK_RPM_${COMPONENT}_FILE_NAME srt to ${CPACK_RPM_${COMPONENT}_FILE_NAME}")
 
-		set(CPACK_RPM_${COMPONENT}_PACKAGE_NAME "${COMPONENT}-${CMAKE_CONF_LC}-${CMAKE_ARCH}")
+		set(CPACK_RPM_${COMPONENT}_PACKAGE_NAME "${COMPONENT}-${CMAKE_BUILD_TYPE_LC}-${CMAKE_ARCH}")
 		
 		# create the post install script in root ...
-		set(POST_INSTALL_FILE "${PROJECT_BINARY_DIR}/deployment/${COMPONENT}-${${PROJECT_NAME_U}_VERSION}-${CMAKE_CONF_LC}-${CMAKE_ARCH}.rpm.post")
+		set(POST_INSTALL_FILE "${PROJECT_BINARY_DIR}/deployment/${COMPONENT}-${${PROJECT_NAME_U}_VERSION}-${CMAKE_BUILD_TYPE_LC}-${CMAKE_ARCH}.rpm.post")
 
 		message(DEBUG "package binary suffix set to ${INSTALL_BINARY_SUFFIX}")
 		message(DEBUG "POST_INSTALL_FILE path set to ${POST_INSTALL_FILE}")
