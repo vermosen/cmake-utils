@@ -662,7 +662,7 @@ function(package_binaries)
 		
 		# create the post install script in root ...
 		set(POST_INSTALL_FILE "${PROJECT_BINARY_DIR}/deployment/${COMPONENT}-${${PROJECT_NAME_U}_VERSION}-${CMAKE_BUILD_TYPE_LC}-${CMAKE_ARCH}.rpm.post")
-
+		
 		message(DEBUG "package binary suffix set to ${INSTALL_BINARY_SUFFIX}")
 		message(DEBUG "POST_INSTALL_FILE path set to ${POST_INSTALL_FILE}")
 		
