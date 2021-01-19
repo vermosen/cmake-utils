@@ -93,14 +93,14 @@ endfunction(find_conan)
 
 function(get_current_date)
 
-    # usage 
-    #set(CURRENT_DATE "")
-    #get_current_date(
-    #    OUT CURRENT_DATE
-    #    FORMAT "+%Y-%m-%d"
-    #)
+	# usage 
+	#set(CURRENT_DATE "")
+	#get_current_date(
+	#    OUT CURRENT_DATE
+	#    FORMAT "+%Y-%m-%d"
+	#)
 
-    set(options)
+	set(options)
 	set(oneValueArgs OUT FORMAT)
 	set(multiValueArgs)
 
@@ -123,8 +123,8 @@ endfunction(get_current_date)
 
 macro(setup_package)
 
-    set(options)
-	set(oneValueArgs NAME)
+	set(options)
+	set(oneValueArgs NAME USER CHANNEL)
 	set(multiValueArgs)
 
 	cmake_parse_arguments(
@@ -134,25 +134,19 @@ macro(setup_package)
 		"${multiValueArgs}" 
 		${ARGN})
 
-	STRING(TOUPPER ${SETUP_PACKAGE_NAME} UCASE)
-
+	string(TOUPPER ${SETUP_PACKAGE_NAME} UCASE)
 	message(DEBUG "${SETUP_PACKAGE_NAME} package setup ...")
 
 	# allows override of the user used
-	IF(DEFINED ${UCASE}_CONAN_USER)
-		message(STATUS "${libname} user has been overriden to ${${UCASE}_CONAN_USER}")
-	else()
-		set(${UCASE}_CONAN_USER ${CONAN_USER})
+	if (NOT DEFINED SETUP_PACKAGE_USER)
+		message(FATAL_ERROR "package ${SETUP_PACKAGE_NAME} user not set!")
 	endif()
 
-	# allows override of the channel used
-	IF(DEFINED ${UCASE}_CONAN_CHANNEL)
-		message(STATUS "${libname} channel has been overriden to ${${UCASE}_CONAN_CHANNEL}")
-	else()
-		set(${UCASE}_CONAN_CHANNEL ${CONAN_CHANNEL})
+	if (NOT DEFINED SETUP_PACKAGE_CHANNEL)
+		message(FATAL_ERROR "package ${SETUP_PACKAGE_NAME} channel not set!")
 	endif()
 
-	list(APPEND REPOS "${SETUP_PACKAGE_NAME}/${${UCASE}_VERS}@${${UCASE}_CONAN_USER}/${${UCASE}_CONAN_CHANNEL}")
+	list(APPEND REPOS "${SETUP_PACKAGE_NAME}/${${UCASE}_VERS}@${SETUP_PACKAGE_USER}/${SETUP_PACKAGE_CHANNEL}")
 
 endmacro()
 
@@ -213,16 +207,28 @@ endfunction()
 macro(load_packages)
 
 	# important: keep as a macro to fwd to calling scope
-    set(options UPDATE)
-	set(oneValueArgs PROFILE)
+	set(options UPDATE)
+	set(oneValueArgs PROFILE USER CHANNEL)
 	set(multiValueArgs NAME OPTIONS SETTINGS)
 
 	cmake_parse_arguments(
 		LOAD_PACKAGES "${options}"
 		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
 
+	# if USER or CHANNEL not set we follow conan API and retrieve from env
+	# see https://docs.conan.io/en/latest/reference/conanfile/attributes.html#default-user-default-channel
+	if (NOT DEFINED LOAD_PACKAGES_USER)
+		set(LOAD_PACKAGES_USER "$ENV{CONAN_USERNAME}")
+		message(DEBUG "retrieved conan user from environment: ${LOAD_PACKAGES_USER}")
+	endif()
+
+	if (NOT DEFINED LOAD_PACKAGES_CHANEL)
+		set(LOAD_PACKAGES_CHANNEL "$ENV{CONAN_CHANNEL}")
+		message(DEBUG "retrieved conan channel from environment: ${LOAD_PACKAGES_CHANNEL}")
+	endif()
+
 	foreach(PKG ${LOAD_PACKAGES_NAME})
-		setup_package(NAME ${PKG})
+		setup_package(NAME ${PKG} USER ${LOAD_PACKAGES_USER} CHANNEL ${LOAD_PACKAGES_CHANNEL})
 	endforeach(PKG)
 
 	message(STATUS "packages to be loaded: ${REPOS} with configuration ${CMAKE_BUILD_TYPE}, settings ${LOAD_PACKAGES_SETTINGS} and options string ${LOAD_PACKAGES_OPTIONS}")
@@ -551,13 +557,13 @@ function(export_project)
 	string(TOUPPER ${EXPORT_PROJECT_NAME} PROJECT_NAME_U)
 
 	file(
-		WRITE "${CMAKE_BINARY_DIR}/${EXPORT_PROJECT_NAME}ConfigVersion.cmake"
+		WRITE "${CMAKE_INSTALL_PREFIX}/${INSTALL_BINARY_SUFFIX}/${EXPORT_PROJECT_NAME}ConfigVersion.cmake"
 		"set(PACKAGE_VERSION \"${EXPORT_PROJECT_REVISION}\")"
 	)
 
 	# generates the conan variables for the project
 	file(
-		WRITE "${CMAKE_BINARY_DIR}/${EXPORT_PROJECT_NAME}Config.cmake"
+		WRITE "${CMAKE_INSTALL_PREFIX}/${INSTALL_BINARY_SUFFIX}/${EXPORT_PROJECT_NAME}Config.cmake"
 		"set(${PROJECT_NAME_U}_CONAN_INCLUDE_DIRS_HINT ${CMAKE_INSTALL_PREFIX}/${INSTALL_INCLUDE_SUFFIX})\n"
         "set(${PROJECT_NAME_U}_CONAN_LIBS_DIRS_HINT ${CMAKE_INSTALL_PREFIX}/${INSTALL_LIBRARY_SUFFIX})\n"
         "set(${PROJECT_NAME_U}_CONAN_BINS_DIRS_HINT ${CMAKE_INSTALL_PREFIX}/${INSTALL_BINARY_SUFFIX})\n"
@@ -570,7 +576,7 @@ function(export_project)
 		EXPORT ${EXPORT_PROJECT_NAME}-targets
 		NAMESPACE "${EXPORT_PROJECT_NAMESPACE}::"
 		FILE "${EXPORT_PROJECT_NAME}Targets.cmake"
-		DESTINATION ${CMAKE_BINARY_DIR}
+		DESTINATION ${CMAKE_INSTALL_PREFIX}/${INSTALL_BINARY_SUFFIX}
 		COMPONENT ${EXPORT_PROJECT_NAME}
 	)
 
