@@ -424,6 +424,33 @@ macro(enable_testing)
 endmacro()
 
 
+function(add_py_unittest)
+
+  set(options)
+	set(oneValueArgs EXEC NAME CLASS FILE PYTHONPATH)
+	set(multiValueArgs DEPENDS)
+
+	cmake_parse_arguments(
+		ADD_TEST_PY "${options}"
+		"${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+	add_test(
+		NAME python.${ADD_TEST_PY_NAME}
+		COMMAND ${ADD_TEST_PY_EXEC} -m unittest -v ${ADD_TEST_PY_FILE}.${ADD_TEST_PY_CLASS}.${ADD_TEST_PY_NAME}
+		WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+	)
+
+	set_tests_properties(python.${ADD_TEST_PY_NAME}
+		PROPERTIES ENVIRONMENT ""
+		DEPENDS ${ADD_TEST_PY_DEPENDS}
+	)
+
+	set_property(TEST python.${ADD_TEST_PY_NAME}
+		APPEND PROPERTY ENVIRONMENT "PYTHONPATH=${ADD_TEST_PY_PYTHONPATH}"
+	)
+
+endfunction(add_py_unittest)
+
 macro(add_testsuite)
 
 	set(options)
