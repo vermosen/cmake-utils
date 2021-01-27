@@ -231,7 +231,8 @@ macro(load_packages)
 		setup_package(NAME ${PKG} USER ${LOAD_PACKAGES_USER} CHANNEL ${LOAD_PACKAGES_CHANNEL})
 	endforeach(PKG)
 
-	message(STATUS "packages to be loaded: ${REPOS} with configuration ${CMAKE_BUILD_TYPE}, settings ${LOAD_PACKAGES_SETTINGS} and options string ${LOAD_PACKAGES_OPTIONS}")
+	message(STATUS "packages to be loaded: ${REPOS} with configuration ${CMAKE_BUILD_TYPE}, \
+				settings ${LOAD_PACKAGES_SETTINGS} and options string ${LOAD_PACKAGES_OPTIONS}")
 
 	IF (${LOAD_PACKAGES_UPDATE})
 		conan_cmake_run(
