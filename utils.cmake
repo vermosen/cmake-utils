@@ -222,7 +222,7 @@ macro(load_packages)
 		message(DEBUG "retrieved conan user from environment: ${LOAD_PACKAGES_USER}")
 	endif()
 
-	if (NOT DEFINED LOAD_PACKAGES_CHANEL)
+	if (NOT DEFINED LOAD_PACKAGES_CHANNEL)
 		set(LOAD_PACKAGES_CHANNEL "$ENV{CONAN_CHANNEL}")
 		message(DEBUG "retrieved conan channel from environment: ${LOAD_PACKAGES_CHANNEL}")
 	endif()
