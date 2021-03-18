@@ -808,7 +808,7 @@ function(r_create_makevars)
 	foreach(PKG_RAW ${R_CREATE_MAKEVARS_PACKAGES})
 		string(TOUPPER ${PKG_RAW} PKG)
 		set(R_INCLUDE_LIBS_STR " ${R_INCLUDE_LIBS_STR} -I \"${CONAN_INCLUDE_DIRS_${PKG}}\" ")
-		set(R_LINKER_STR " ${R_LINKED_LIBS_STR} -L${CONAN_LIB_DIRS_${PKG}} ")
+		set(R_LINKER_STR " ${R_LINKER_STR} -L${CONAN_LIB_DIRS_${PKG}} ")
 
 		foreach(LIB ${CONAN_LIBS_${PKG}})
 			set(R_LINKED_LIBS_STR " ${R_LINKED_LIBS_STR} -l${LIB} ")
