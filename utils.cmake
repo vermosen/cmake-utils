@@ -336,6 +336,7 @@ function(install_library)
 	message(DEBUG "exporting ${INSTALL_LIBRARY_NAME} lib into ${INSTALL_LIBRARY_PACKAGE}-targets...")
 
 	# TODO: this will fail to package shared libs ...
+	# TODO: for header only libs, it looks like no config/target files are generated
 	install(
  		TARGETS ${INSTALL_LIBRARY_NAME}
 		EXPORT ${INSTALL_LIBRARY_PACKAGE}-targets
